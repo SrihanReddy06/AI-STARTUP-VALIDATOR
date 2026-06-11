@@ -78,8 +78,30 @@ async def run_product_strategist(
     
     chain = prompt | structured_llm
     
-    # Execute the chain
-    result = await chain.ainvoke({"idea": idea})
+    try:
+        result = await chain.ainvoke({"idea": idea})
+    except Exception as exc:
+        await stream_log(queue, agent_name, "warning", "Structured ProductRefinement output failed; falling back to raw JSON parse.")
+        logging.warning(f"Structured ProductRefinement failed: {exc}")
+        
+        fallback_prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are a product strategist. Respond ONLY with valid JSON (no markdown) that matches: "
+             "{\"refined_idea\": <string>, \"value_proposition\": <string>, \"core_features\": [<strings>], "
+             "\"future_enhancements\": [<strings>], \"target_users\": <string>}"),
+            ("user", "Here is the raw startup idea:\n\n{idea}\n\nGenerate product refinement JSON NOW.")
+        ])
+        
+        raw = await (fallback_prompt | llm).ainvoke({"idea": idea})
+        raw_text = getattr(raw, "content", str(raw))
+        if isinstance(raw_text, list):
+            raw_text = "\n".join(str(item) for item in raw_text)
+        
+        json_body = extract_json_object(str(raw_text))
+        if json_body is None:
+            logging.error(f"Fallback parse failed. Raw text: {raw_text[:500]}")
+            raise ValueError(f"Could not extract valid JSON from fallback response.")
+        
+        result = ProductRefinement.model_validate_json(json_body)
     
     if critique:
         await stream_log(queue, agent_name, "completed", "Product plan refined and cost-optimized successfully!")

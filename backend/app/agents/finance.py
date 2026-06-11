@@ -85,14 +85,44 @@ async def run_financial_officer(
     
     chain = prompt | structured_llm
     
-    # Execute the chain
-    result = await chain.ainvoke({
-        "refined_idea": product_context.refined_idea,
-        "value_prop": product_context.value_proposition,
-        "som_usd": market_context.som_usd,
-        "competitors": competitor_str,
-        "search_results": search_results
-    })
+    try:
+        result = await chain.ainvoke({
+            "refined_idea": product_context.refined_idea,
+            "value_prop": product_context.value_proposition,
+            "som_usd": market_context.som_usd,
+            "competitors": competitor_str,
+            "search_results": search_results
+        })
+    except Exception as exc:
+        await stream_log(queue, agent_name, "warning", "Structured FinancialModel output failed; falling back to raw JSON parse.")
+        logging.warning(f"Structured FinancialModel failed: {exc}")
+        
+        fallback_prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are a CFO. Respond ONLY with valid JSON (no markdown) that matches: "
+             "{\"revenue_model\": <string>, \"pricing_strategy\": <string>, \"unit_economics\": {\"cac\": <number>, \"
+             "ltv\": <number>}, \"financial_projections\": [{\"year\": <number>, \"revenue\": <number>, \"expenses\": <number>, \"
+             "net_income\": <number>}], \"funding_ask\": <number>, \"burn_rate_monthly\": <number>}"),
+            ("user", "Refined Idea: {refined_idea}\nValue Prop: {value_prop}\nSOM: {som_usd}\nCompetitors: {competitors}\n"
+             "Search Results: {search_results}\n\nGenerate financial model JSON NOW.")
+        ])
+        
+        raw = await (fallback_prompt | llm).ainvoke({
+            "refined_idea": product_context.refined_idea,
+            "value_prop": product_context.value_proposition,
+            "som_usd": market_context.som_usd,
+            "competitors": competitor_str,
+            "search_results": search_results
+        })
+        raw_text = getattr(raw, "content", str(raw))
+        if isinstance(raw_text, list):
+            raw_text = "\n".join(str(item) for item in raw_text)
+        
+        json_body = extract_json_object(str(raw_text))
+        if json_body is None:
+            logging.error(f"Fallback parse failed. Raw text: {raw_text[:500]}")
+            raise ValueError(f"Could not extract valid JSON from fallback response.")
+        
+        result = FinancialModel.model_validate_json(json_body)
     
     await stream_log(queue, agent_name, "completed", "Financial model and 3-year projections generated!")
     

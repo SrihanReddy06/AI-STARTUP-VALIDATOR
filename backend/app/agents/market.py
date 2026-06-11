@@ -11,9 +11,32 @@ while current_dir and current_dir != os.path.dirname(current_dir):
     current_dir = os.path.dirname(current_dir)
 
 import asyncio
+import json
+import re
 from app.agents.base import get_llm, stream_log, search_web
 from app.schemas import MarketAnalysis, ProductRefinement
 from langchain_core.prompts import ChatPromptTemplate
+
+
+def extract_json_object(text: str) -> str | None:
+    start_idx = text.find("{")
+    if start_idx == -1:
+        return None
+
+    depth = 0
+    for idx in range(start_idx, len(text)):
+        if text[idx] == "{":
+            depth += 1
+        elif text[idx] == "}":
+            depth -= 1
+            if depth == 0:
+                candidate = text[start_idx: idx + 1]
+                try:
+                    json.loads(candidate)
+                    return candidate
+                except json.JSONDecodeError:
+                    continue
+    return None
 
 async def run_market_researcher(
     product_context: ProductRefinement,
@@ -68,20 +91,57 @@ async def run_market_researcher(
         ))
     ])
     
-    # Get LLM and attach structured output parser
+    # Get LLM and try structured output parsing
     llm = get_llm(provider, temperature=0.1)
     structured_llm = llm.with_structured_output(MarketAnalysis)
-    
     chain = prompt | structured_llm
-    
-    # Execute the chain
-    result = await chain.ainvoke({
-        "refined_idea": product_context.refined_idea,
-        "value_prop": product_context.value_proposition,
-        "search_results": search_results
-    })
-    
+
+    try:
+        result = await chain.ainvoke({
+            "refined_idea": product_context.refined_idea,
+            "value_prop": product_context.value_proposition,
+            "search_results": search_results
+        })
+    except Exception as exc:
+        await stream_log(queue, agent_name, "warning", "Structured MarketAnalysis output failed; falling back to raw JSON parse.")
+        logging.warning(f"Structured MarketAnalysis failed: {exc}")
+
+        fallback_prompt = ChatPromptTemplate.from_messages([
+            ("system", (
+                "You are a technical market researcher. Respond ONLY with valid JSON (no markdown, no explanation) "
+                "that matches this exact structure:\n"
+                "{\"tam_usd\": <number>, \"sam_usd\": <number>, \"som_usd\": <number>, "
+                "\"market_trends\": [<strings>], \"competitor_matrix\": [{\"name\": <string>, \"strengths\": [<strings>], "
+                "\"unique_value_prop\": <string>, \"weaknesses\": [<strings>]}], "
+                "\"swot_analysis\": {\"strengths\": [<strings>], \"weaknesses\": [<strings>], "
+                "\"opportunities\": [<strings>], \"threats\": [<strings>]}}\n\n"
+            )),
+            ("user", (
+                "Here is the product context:\n"
+                "Refined Idea: {refined_idea}\n"
+                "Value Proposition: {value_prop}\n\n"
+                "Live Web Search Results:\n{search_results}\n\n"
+                "Generate market analysis JSON NOW."
+            ))
+        ])
+        
+        raw = await (fallback_prompt | llm).ainvoke({
+            "refined_idea": product_context.refined_idea,
+            "value_prop": product_context.value_proposition,
+            "search_results": search_results
+        })
+        raw_text = getattr(raw, "content", str(raw))
+        if isinstance(raw_text, list):
+            raw_text = "\n".join(str(item) for item in raw_text)
+
+        json_body = extract_json_object(str(raw_text))
+        if json_body is None:
+            logging.error(f"Fallback parse failed. Raw text: {raw_text[:500]}")
+            raise ValueError(f"Could not extract valid JSON from fallback response.")
+
+        result = MarketAnalysis.model_validate_json(json_body)
+
     await stream_log(queue, agent_name, "completed", "Market research and competitor analysis completed!")
-    
+
     return result
 

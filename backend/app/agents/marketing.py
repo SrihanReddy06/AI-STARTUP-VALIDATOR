@@ -77,13 +77,42 @@ async def run_marketing_agent(
     
     chain = prompt | structured_llm
     
-    # Execute the chain
-    result = await chain.ainvoke({
-        "refined_idea": product_context.refined_idea,
-        "value_prop": product_context.value_proposition,
-        "trends": trends_str,
-        "search_results": search_results
-    })
+    try:
+        result = await chain.ainvoke({
+            "refined_idea": product_context.refined_idea,
+            "value_prop": product_context.value_proposition,
+            "trends": trends_str,
+            "search_results": search_results
+        })
+    except Exception as exc:
+        await stream_log(queue, agent_name, "warning", "Structured GTMStrategy output failed; falling back to raw JSON parse.")
+        logging.warning(f"Structured GTMStrategy failed: {exc}")
+        
+        fallback_prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are a CMO. Respond ONLY with valid JSON (no markdown) that matches: "
+             "{\"brand_name_suggestions\": [<strings>], \"positioning_statement\": <string>, \"target_customer_segment\": <string>, \"
+             "marketing_channels\": [{\"channel\": <string>, \"budget_percent\": <number>, \"expected_reach\": <string>}], \"
+             "launch_timeline_weeks\": <number>}"),
+            ("user", "Refined Idea: {refined_idea}\nValue Prop: {value_prop}\nMarket Trends: {trends}\n"
+             "Search Results: {search_results}\n\nGenerate GTM strategy JSON NOW.")
+        ])
+        
+        raw = await (fallback_prompt | llm).ainvoke({
+            "refined_idea": product_context.refined_idea,
+            "value_prop": product_context.value_proposition,
+            "trends": trends_str,
+            "search_results": search_results
+        })
+        raw_text = getattr(raw, "content", str(raw))
+        if isinstance(raw_text, list):
+            raw_text = "\n".join(str(item) for item in raw_text)
+        
+        json_body = extract_json_object(str(raw_text))
+        if json_body is None:
+            logging.error(f"Fallback parse failed. Raw text: {raw_text[:500]}")
+            raise ValueError(f"Could not extract valid JSON from fallback response.")
+        
+        result = GTMStrategy.model_validate_json(json_body)
     
     await stream_log(queue, agent_name, "completed", "Go-To-Market strategy and branding guide ready!")
     

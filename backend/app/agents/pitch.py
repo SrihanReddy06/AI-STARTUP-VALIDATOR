@@ -98,21 +98,59 @@ async def run_pitch_agent(
     
     chain = prompt | structured_llm
     
-    # Execute the chain
-    result = await chain.ainvoke({
-        "brand_name": brand_name,
-        "tagline": tagline,
-        "refined_idea": product.refined_idea,
-        "mvp_features": mvp_features_str,
-        "tam": market.tam_usd,
-        "sam": market.sam_usd,
-        "som": market.som_usd,
-        "competitor_names": competitor_names_str,
-        "monetization": finance.revenue_model,
-        "pricing": finance.pricing_strategy,
-        "y3_rev": finance.yearly_projections[-1].revenue_usd if finance.yearly_projections else 100000,
-        "channels": channels_str
-    })
+    try:
+        result = await chain.ainvoke({
+            "brand_name": brand_name,
+            "tagline": tagline,
+            "refined_idea": product.refined_idea,
+            "mvp_features": mvp_features_str,
+            "tam": market.tam_usd,
+            "sam": market.sam_usd,
+            "som": market.som_usd,
+            "competitor_names": competitor_names_str,
+            "monetization": finance.revenue_model,
+            "pricing": finance.pricing_strategy,
+            "y3_rev": finance.yearly_projections[-1].revenue_usd if finance.yearly_projections else 100000,
+            "channels": channels_str
+        })
+    except Exception as exc:
+        await stream_log(queue, agent_name, "warning", "Structured PitchDeck output failed; falling back to raw JSON parse.")
+        logging.warning(f"Structured PitchDeck failed: {exc}")
+        
+        fallback_prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are a pitch coach. Respond ONLY with valid JSON (no markdown) that matches: "
+             "{\"slides\": [{\"slide_number\": <number>, \"title\": <string>, \"key_points\": [<strings>], "
+             "\"visual_note\": <string>}]}"),
+            ("user", "Brand: {brand_name}\\nTagline: {tagline}\\nIdea: {refined_idea}\\nFeatures: {mvp_features}\\n"
+             "TAM: ${tam}\\nSAM: ${sam}\\nSOM: ${som}\\nCompetitors: {competitor_names}\\nMonetization: {monetization}\\n"
+             "Pricing: {pricing}\\nYear 3 Revenue: ${y3_rev}\\nChannels: {channels}\\n\\n"
+             "Generate 10-slide pitch deck JSON NOW.")
+        ])
+        
+        raw = await (fallback_prompt | llm).ainvoke({
+            "brand_name": brand_name,
+            "tagline": tagline,
+            "refined_idea": product.refined_idea,
+            "mvp_features": mvp_features_str,
+            "tam": market.tam_usd,
+            "sam": market.sam_usd,
+            "som": market.som_usd,
+            "competitor_names": competitor_names_str,
+            "monetization": finance.revenue_model,
+            "pricing": finance.pricing_strategy,
+            "y3_rev": finance.yearly_projections[-1].revenue_usd if finance.yearly_projections else 100000,
+            "channels": channels_str
+        })
+        raw_text = getattr(raw, "content", str(raw))
+        if isinstance(raw_text, list):
+            raw_text = "\n".join(str(item) for item in raw_text)
+        
+        json_body = extract_json_object(str(raw_text))
+        if json_body is None:
+            logging.error(f"Fallback parse failed. Raw text: {raw_text[:500]}")
+            raise ValueError(f"Could not extract valid JSON from fallback response.")
+        
+        result = PitchDeck.model_validate_json(json_body)
     
     await stream_log(queue, agent_name, "completed", "Investor pitch deck slides designed successfully!")
     

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type MouseEvent } from 'react';
 import './styles/theme.css';
 import { IdeaForm } from './components/IdeaForm';
 import { Dashboard } from './components/Dashboard';
@@ -32,10 +32,20 @@ function App() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const clearPollInterval = () => {
+    const intervalId = pollRef.current;
+    if (intervalId !== null) {
+      clearInterval(intervalId);
+      pollRef.current = null;
+    }
+  };
+
+  const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000';
+
   const fetchHistory = async () => {
     try {
       setIsHistoryLoading(true);
-      const res = await fetch('http://localhost:8000/api/history');
+      const res = await fetch(`${API_BASE}/api/history`);
       if (res.ok) {
         const data = await res.json();
         setHistoryList(data);
@@ -53,18 +63,15 @@ function App() {
     }, 0);
     return () => {
       clearTimeout(timer);
-      if (pollRef.current) clearInterval(pollRef.current);
+      clearPollInterval();
     };
   }, []);
 
   const handleLoadHistory = async (id: number) => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
+    clearPollInterval();
     try {
       setIsLoading(true);
-      const res = await fetch(`http://localhost:8000/api/history/${id}`);
+      const res = await fetch(`${API_BASE}/api/history/${id}`);
       if (res.ok) {
         const data = await res.json();
         if (data.status === 'completed') {
@@ -77,18 +84,16 @@ function App() {
           setIsHistoryOpen(false);
           pollRef.current = setInterval(async () => {
             try {
-              const pollRes = await fetch(`http://localhost:8000/api/history/${id}`);
+              const pollRes = await fetch(`${API_BASE}/api/history/${id}`);
               if (pollRes.ok) {
                 const planDetail = await pollRes.json();
                 if (planDetail.status === 'completed') {
-                  clearInterval(pollRef.current);
-                  pollRef.current = null;
+                  clearPollInterval();
                   setReport(planDetail.report);
                   setIsLoading(false);
                   fetchHistory();
                 } else if (planDetail.status === 'failed') {
-                  clearInterval(pollRef.current);
-                  pollRef.current = null;
+                  clearPollInterval();
                   setIsLoading(false);
                   alert(`Generation failed: ${planDetail.error_message || 'Unknown error'}`);
                   fetchHistory();
@@ -112,11 +117,11 @@ function App() {
     }
   };
 
-  const handleDeleteHistory = async (e: React.MouseEvent, id: number) => {
+  const handleDeleteHistory = async (e: MouseEvent<HTMLButtonElement>, id: number) => {
     e.stopPropagation();
     if (!confirm('Are you sure you want to delete this startup from history?')) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/history/${id}`, {
+      const res = await fetch(`${API_BASE}/api/history/${id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -132,13 +137,10 @@ function App() {
     setReport(null);
     setProviders(chosenProviders);
 
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
+    clearPollInterval();
 
     try {
-      const response = await fetch('http://localhost:8000/api/generate', {
+      const response = await fetch(`${API_BASE}/api/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -162,18 +164,16 @@ function App() {
       // Poll database for completion status
       pollRef.current = setInterval(async () => {
         try {
-          const pollResponse = await fetch(`http://localhost:8000/api/history/${planId}`);
+          const pollResponse = await fetch(`${API_BASE}/api/history/${planId}`);
           if (pollResponse.ok) {
             const planDetail = await pollResponse.json();
             if (planDetail.status === 'completed') {
-              clearInterval(pollRef.current);
-              pollRef.current = null;
+              clearPollInterval();
               setReport(planDetail.report);
               setIsLoading(false);
               fetchHistory();
             } else if (planDetail.status === 'failed') {
-              clearInterval(pollRef.current);
-              pollRef.current = null;
+              clearPollInterval();
               setIsLoading(false);
               alert(`Generation failed: ${planDetail.error_message || 'Unknown error'}`);
               fetchHistory();
@@ -193,10 +193,7 @@ function App() {
   };
 
   const handleReset = () => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
+    clearPollInterval();
     setReport(null);
     setIsLoading(false);
   };

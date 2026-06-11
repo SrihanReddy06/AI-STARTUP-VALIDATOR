@@ -26,7 +26,7 @@ def get_llm(provider: str, model_name: Optional[str] = None, temperature: float 
 
     if provider == "groq":
         from langchain_groq import ChatGroq
-        api_key = settings.GROQ_API_KEY
+        api_key = settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY")
         if not api_key or api_key == "your_groq_api_key_here":
             # Fallback if key not set
             logger.warning("GROQ_API_KEY not found or is placeholder, using default settings or environment.")
@@ -40,7 +40,7 @@ def get_llm(provider: str, model_name: Optional[str] = None, temperature: float 
         )
     else:  # Default to gemini
         from langchain_google_genai import ChatGoogleGenerativeAI
-        api_key = settings.GEMINI_API_KEY
+        api_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         if not api_key or api_key == "your_gemini_api_key_here":
             logger.warning("GEMINI_API_KEY not found or is placeholder, using default settings or environment.")
         
