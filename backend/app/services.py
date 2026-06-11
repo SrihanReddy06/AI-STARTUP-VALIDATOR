@@ -101,12 +101,19 @@ async def orchestrate_startup_builder(
             
             # CFO writes a critique of the initial product specifications
             cfo_llm = get_llm(finance_provider, temperature=0.2)
+            # Avoid nested f-strings inside a single f-string literal which causes
+            # "Nested replacement fields are not allowed" syntax errors. Precompute
+            # the string representations first and then build the prompt.
+            mvp_names = [f.name for f in product_refinement.mvp_features]
+            startup_costs_str = ", ".join([f"{c.category}: ${c.cost_usd}" for c in financial_model.startup_costs])
+
             cfo_critique_prompt = (
-                f"You are the Startup CFO. Review the MVP features: {[f.name for f in product_refinement.mvp_features]}\n"
-                f"and these initial startup costs: {[f'{c.category}: ${c.cost_usd}' for c in financial_model.startup_costs]} which sum to ${total_costs}.\n"
-                f"We are on a strict Bootstrapped budget under $10,000. Write a direct, highly critical 3-4 sentence review "
-                f"explaining exactly which infrastructure, services, or developer costs are causing us to exceed our limit, "
-                f"and advising the CTO (Product Strategist) on what specific free/open-source tools or hosting architectures they must substitute to get costs below $10,000."
+                "You are the Startup CFO. Review the MVP features: "
+                f"{mvp_names}\n"
+                f"and these initial startup costs: {startup_costs_str} which sum to ${total_costs}.\n"
+                "We are on a strict Bootstrapped budget under $10,000. Write a direct, highly critical 3-4 sentence review "
+                "explaining exactly which infrastructure, services, or developer costs are causing us to exceed our limit, "
+                "and advising the CTO (Product Strategist) on what specific free/open-source tools or hosting architectures they must substitute to get costs below $10,000."
             )
             
             from langchain_core.messages import HumanMessage

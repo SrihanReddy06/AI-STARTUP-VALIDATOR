@@ -119,9 +119,10 @@ async def run_pitch_agent(
         logging.warning(f"Structured PitchDeck failed: {exc}")
         
         fallback_prompt = ChatPromptTemplate.from_messages([
+            # Escape JSON braces so ChatPromptTemplate does not interpret them as variables
             ("system", "You are a pitch coach. Respond ONLY with valid JSON (no markdown) that matches: "
-             "{\"slides\": [{\"slide_number\": <number>, \"title\": <string>, \"key_points\": [<strings>], "
-             "\"visual_note\": <string>}]}"),
+             "{{\"slides\": [{{\"slide_number\": <number>, \"title\": <string>, \"key_points\": [<strings>], "
+             "\"visual_note\": <string>}}]}}"),
             ("user", "Brand: {brand_name}\\nTagline: {tagline}\\nIdea: {refined_idea}\\nFeatures: {mvp_features}\\n"
              "TAM: ${tam}\\nSAM: ${sam}\\nSOM: ${som}\\nCompetitors: {competitor_names}\\nMonetization: {monetization}\\n"
              "Pricing: {pricing}\\nYear 3 Revenue: ${y3_rev}\\nChannels: {channels}\\n\\n"

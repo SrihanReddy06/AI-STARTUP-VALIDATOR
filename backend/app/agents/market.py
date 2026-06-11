@@ -111,10 +111,10 @@ async def run_market_researcher(
             ("system", (
                 "You are a technical market researcher. Respond ONLY with valid JSON (no markdown, no explanation) "
                 "that matches this exact structure:\n"
-                "{\"tam_usd\": <number>, \"sam_usd\": <number>, \"som_usd\": <number>, "
-                "\"market_trends\": [<strings>], \"competitor_matrix\": [{\"name\": <string>, \"strengths\": [<strings>], "
-                "\"unique_value_prop\": <string>, \"weaknesses\": [<strings>]}], "
-                "\"swot_analysis\": {\"strengths\": [<strings>], \"weaknesses\": [<strings>], "
+                "{{\"tam_usd\": <number>, \"sam_usd\": <number>, \"som_usd\": <number>, "
+                "\"market_trends\": [<strings>], \"competitor_matrix\": [{{\"name\": <string>, \"strengths\": [<strings>], "
+                "\"unique_value_prop\": <string>, \"weaknesses\": [<strings>]}}], "
+                "\"swot_analysis\": {{\"strengths\": [<strings>], \"weaknesses\": [<strings>], "
                 "\"opportunities\": [<strings>], \"threats\": [<strings>]}}\n\n"
             )),
             ("user", (

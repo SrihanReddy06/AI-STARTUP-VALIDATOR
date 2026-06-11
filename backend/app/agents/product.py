@@ -91,10 +91,11 @@ async def run_product_strategist(
         await stream_log(queue, agent_name, "warning", "Structured ProductRefinement output failed; falling back to raw JSON parse.")
         logging.warning(f"Structured ProductRefinement failed: {exc}")
         
+        # Escape curly braces in the JSON schema so ChatPromptTemplate doesn't treat them as format variables
         fallback_prompt = ChatPromptTemplate.from_messages([
             ("system", "You are a product strategist. Respond ONLY with valid JSON (no markdown) that matches: "
-             "{\"refined_idea\": <string>, \"value_proposition\": <string>, \"core_features\": [<strings>], "
-             "\"future_enhancements\": [<strings>], \"target_users\": <string>}"),
+             "{{\"refined_idea\": <string>, \"value_proposition\": <string>, \"core_features\": [<strings>], "
+             "\"future_enhancements\": [<strings>], \"target_users\": <string>}}"),
             ("user", "Here is the raw startup idea:\n\n{idea}\n\nGenerate product refinement JSON NOW.")
         ])
         
