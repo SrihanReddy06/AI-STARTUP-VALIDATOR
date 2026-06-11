@@ -11,8 +11,16 @@ while current_dir and current_dir != os.path.dirname(current_dir):
     current_dir = os.path.dirname(current_dir)
 
 import asyncio
+import logging
+import re
 from app.agents.base import get_llm, stream_log, search_web
 from app.schemas import FinancialModel, ProductRefinement, MarketAnalysis
+from langchain_core.prompts import ChatPromptTemplate
+
+def extract_json_object(text: str) -> str | None:
+    """Extract the first JSON object from text."""
+    match = re.search(r'\{.*?\}(?=\s*$|\s*[\]\}])', text, re.DOTALL)
+    return match.group(0) if match else None
 from langchain_core.prompts import ChatPromptTemplate
 
 async def run_financial_officer(
@@ -98,10 +106,8 @@ async def run_financial_officer(
         logging.warning(f"Structured FinancialModel failed: {exc}")
         
         fallback_prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are a CFO. Respond ONLY with valid JSON (no markdown) that matches: "
-             "{\"revenue_model\": <string>, \"pricing_strategy\": <string>, \"unit_economics\": {\"cac\": <number>, \"
-             "ltv\": <number>}, \"financial_projections\": [{\"year\": <number>, \"revenue\": <number>, \"expenses\": <number>, \"
-             "net_income\": <number>}], \"funding_ask\": <number>, \"burn_rate_monthly\": <number>}"),
+            ("system", "You are a CFO. Respond ONLY with valid JSON (no markdown). Include: revenue_model, pricing_strategy, "
+             "unit_economics (cac, ltv), financial_projections array, funding_ask, and burn_rate_monthly."),
             ("user", "Refined Idea: {refined_idea}\nValue Prop: {value_prop}\nSOM: {som_usd}\nCompetitors: {competitors}\n"
              "Search Results: {search_results}\n\nGenerate financial model JSON NOW.")
         ])

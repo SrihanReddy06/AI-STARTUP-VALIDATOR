@@ -11,10 +11,17 @@ while current_dir and current_dir != os.path.dirname(current_dir):
     current_dir = os.path.dirname(current_dir)
 
 import asyncio
+import logging
+import re
 from typing import Optional
 from app.agents.base import get_llm, stream_log
 from app.schemas import ProductRefinement
 from langchain_core.prompts import ChatPromptTemplate
+
+def extract_json_object(text: str) -> str | None:
+    """Extract the first JSON object from text."""
+    match = re.search(r'\{.*?\}(?=\s*$|\s*[\]\}])', text, re.DOTALL)
+    return match.group(0) if match else None
 
 async def run_product_strategist(
     idea: str,

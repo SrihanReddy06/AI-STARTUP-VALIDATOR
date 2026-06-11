@@ -12,6 +12,7 @@ while current_dir and current_dir != os.path.dirname(current_dir):
 
 import asyncio
 import json
+import logging
 import re
 from app.agents.base import get_llm, stream_log, search_web
 from app.schemas import MarketAnalysis, ProductRefinement

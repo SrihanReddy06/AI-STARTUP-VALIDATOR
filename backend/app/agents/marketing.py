@@ -11,8 +11,16 @@ while current_dir and current_dir != os.path.dirname(current_dir):
     current_dir = os.path.dirname(current_dir)
 
 import asyncio
+import logging
+import re
 from app.agents.base import get_llm, stream_log, search_web
 from app.schemas import GTMStrategy, ProductRefinement, MarketAnalysis
+from langchain_core.prompts import ChatPromptTemplate
+
+def extract_json_object(text: str) -> str | None:
+    """Extract the first JSON object from text."""
+    match = re.search(r'\{.*?\}(?=\s*$|\s*[\]\}])', text, re.DOTALL)
+    return match.group(0) if match else None
 from langchain_core.prompts import ChatPromptTemplate
 
 async def run_marketing_agent(
@@ -89,10 +97,8 @@ async def run_marketing_agent(
         logging.warning(f"Structured GTMStrategy failed: {exc}")
         
         fallback_prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are a CMO. Respond ONLY with valid JSON (no markdown) that matches: "
-             "{\"brand_name_suggestions\": [<strings>], \"positioning_statement\": <string>, \"target_customer_segment\": <string>, \"
-             "marketing_channels\": [{\"channel\": <string>, \"budget_percent\": <number>, \"expected_reach\": <string>}], \"
-             "launch_timeline_weeks\": <number>}"),
+            ("system", "You are a CMO. Respond ONLY with valid JSON (no markdown). Include: brand_name_suggestions array, "
+             "positioning_statement, target_customer_segment, marketing_channels array, and launch_timeline_weeks."),
             ("user", "Refined Idea: {refined_idea}\nValue Prop: {value_prop}\nMarket Trends: {trends}\n"
              "Search Results: {search_results}\n\nGenerate GTM strategy JSON NOW.")
         ])
