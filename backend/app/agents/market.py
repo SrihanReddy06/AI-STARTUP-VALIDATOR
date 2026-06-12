@@ -14,30 +14,9 @@ import asyncio
 import json
 import logging
 import re
-from app.agents.base import get_llm, stream_log, search_web
+from app.agents.base import get_llm, stream_log, search_web, extract_json_object
 from app.schemas import MarketAnalysis, ProductRefinement
 from langchain_core.prompts import ChatPromptTemplate
-
-
-def extract_json_object(text: str) -> str | None:
-    start_idx = text.find("{")
-    if start_idx == -1:
-        return None
-
-    depth = 0
-    for idx in range(start_idx, len(text)):
-        if text[idx] == "{":
-            depth += 1
-        elif text[idx] == "}":
-            depth -= 1
-            if depth == 0:
-                candidate = text[start_idx: idx + 1]
-                try:
-                    json.loads(candidate)
-                    return candidate
-                except json.JSONDecodeError:
-                    continue
-    return None
 
 async def run_market_researcher(
     product_context: ProductRefinement,

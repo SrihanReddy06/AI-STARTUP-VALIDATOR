@@ -66,6 +66,32 @@ def get_llm(provider: str, model_name: Optional[str] = None, temperature: float 
             google_api_key=api_key
         )
 
+def extract_json_object(text: str) -> Optional[str]:
+    """
+    Extracts the first complete JSON object { ... } from text.
+    Handles nested braces correctly using a depth counter.
+    """
+    start_idx = text.find("{")
+    if start_idx == -1:
+        return None
+
+    depth = 0
+    for idx in range(start_idx, len(text)):
+        char = text[idx]
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                candidate = text[start_idx: idx + 1]
+                import json
+                try:
+                    json.loads(candidate)
+                    return candidate
+                except json.JSONDecodeError:
+                    continue
+    return None
+
 async def stream_log(queue: asyncio.Queue, agent: str, status: str, detail: str = ""):
     """
     Helper to push a formatted log status dictionary into the streaming queue.

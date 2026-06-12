@@ -12,7 +12,7 @@ while current_dir and current_dir != os.path.dirname(current_dir):
 
 import asyncio
 import logging
-from app.agents.base import get_llm, stream_log
+from app.agents.base import get_llm, stream_log, extract_json_object
 from app.schemas import PitchDeck, ProductRefinement, MarketAnalysis, FinancialModel, GTMStrategy
 from langchain_core.prompts import ChatPromptTemplate
 
