@@ -97,8 +97,11 @@ async def run_marketing_agent(
         logging.warning(f"Structured GTMStrategy failed: {exc}")
         
         fallback_prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are a CMO. Respond ONLY with valid JSON (no markdown). Include: brand_name_suggestions array, "
-             "positioning_statement, target_customer_segment, marketing_channels array, and launch_timeline_weeks."),
+            ("system", "You are a CMO. Respond ONLY with valid JSON (no markdown) that matches: "
+             "{{\"brand_name_suggestions\": [<strings>], \"brand_tagline_suggestions\": [<strings>], "
+             "\"marketing_channels\": [{{\"channel\": <string>, \"cost_level\": <string>, \"description\": <string>}}], "
+             "\"launch_timeline\": [{{\"phase\": <string>, \"time_period\": <string>, \"actions\": [<strings>]}}], "
+             "\"key_metrics\": [{{\"metric\": <string>, \"target\": <string>, \"description\": <string>}}]}}"),
             ("user", "Refined Idea: {refined_idea}\nValue Prop: {value_prop}\nMarket Trends: {trends}\n"
              "Search Results: {search_results}\n\nGenerate GTM strategy JSON NOW.")
         ])

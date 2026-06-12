@@ -94,8 +94,10 @@ async def run_product_strategist(
         # Escape curly braces in the JSON schema so ChatPromptTemplate doesn't treat them as format variables
         fallback_prompt = ChatPromptTemplate.from_messages([
             ("system", "You are a product strategist. Respond ONLY with valid JSON (no markdown) that matches: "
-             "{{\"refined_idea\": <string>, \"value_proposition\": <string>, \"core_features\": [<strings>], "
-             "\"future_enhancements\": [<strings>], \"target_users\": <string>}}"),
+             "{{\"refined_idea\": <string>, \"value_proposition\": <string>, "
+             "\"target_personas\": [{{\"name\": <string>, \"role\": <string>, \"pain_point\": <string>, \"solution\": <string>}}], "
+             "\"mvp_features\": [{{\"name\": <string>, \"description\": <string>, \"priority\": <string>}}], "
+             "\"user_flow_steps\": [<strings>]}}"),
             ("user", "Here is the raw startup idea:\n\n{idea}\n\nGenerate product refinement JSON NOW.")
         ])
         

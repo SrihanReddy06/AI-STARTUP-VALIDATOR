@@ -115,7 +115,7 @@ async def run_market_researcher(
                 "\"market_trends\": [<strings>], \"competitor_matrix\": [{{\"name\": <string>, \"strengths\": [<strings>], "
                 "\"unique_value_prop\": <string>, \"weaknesses\": [<strings>]}}], "
                 "\"swot_analysis\": {{\"strengths\": [<strings>], \"weaknesses\": [<strings>], "
-                "\"opportunities\": [<strings>], \"threats\": [<strings>]}}\n\n"
+                "\"opportunities\": [<strings>], \"threats\": [<strings>]}}}}"
             )),
             ("user", (
                 "Here is the product context:\n"

@@ -106,8 +106,10 @@ async def run_financial_officer(
         logging.warning(f"Structured FinancialModel failed: {exc}")
         
         fallback_prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are a CFO. Respond ONLY with valid JSON (no markdown). Include: revenue_model, pricing_strategy, "
-             "unit_economics (cac, ltv), financial_projections array, funding_ask, and burn_rate_monthly."),
+            ("system", "You are a CFO. Respond ONLY with valid JSON (no markdown) that matches: "
+             "{{\"revenue_model\": <string>, \"pricing_strategy\": <string>, "
+             "\"startup_costs\": [{{\"category\": <string>, \"cost_usd\": <number>, \"description\": <string>}}], "
+             "\"yearly_projections\": [{{\"year\": <number>, \"revenue_usd\": <number>, \"expenses_usd\": <number>, \"profit_usd\": <number>}}]}}"),
             ("user", "Refined Idea: {refined_idea}\nValue Prop: {value_prop}\nSOM: {som_usd}\nCompetitors: {competitors}\n"
              "Search Results: {search_results}\n\nGenerate financial model JSON NOW.")
         ])

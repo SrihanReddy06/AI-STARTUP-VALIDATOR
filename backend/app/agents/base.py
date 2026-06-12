@@ -24,9 +24,23 @@ def get_llm(provider: str, model_name: Optional[str] = None, temperature: float 
     # Normalize provider name
     provider = provider.strip().lower()
 
+    # Automatic fallback if the selected API key is missing
+    gemini_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    groq_key = settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY")
+    
+    has_gemini = gemini_key and gemini_key != "" and gemini_key != "your_gemini_api_key_here"
+    has_groq = groq_key and groq_key != "" and groq_key != "your_groq_api_key_here"
+
+    if provider == "gemini" and not has_gemini and has_groq:
+        logger.info("GEMINI_API_KEY not set, but GROQ_API_KEY is available. Falling back to Groq.")
+        provider = "groq"
+    elif provider == "groq" and not has_groq and has_gemini:
+        logger.info("GROQ_API_KEY not set, but GEMINI_API_KEY is available. Falling back to Gemini.")
+        provider = "gemini"
+
     if provider == "groq":
         from langchain_groq import ChatGroq
-        api_key = settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY")
+        api_key = groq_key
         if not api_key or api_key == "your_groq_api_key_here":
             # Fallback if key not set
             logger.warning("GROQ_API_KEY not found or is placeholder, using default settings or environment.")
@@ -40,7 +54,7 @@ def get_llm(provider: str, model_name: Optional[str] = None, temperature: float 
         )
     else:  # Default to gemini
         from langchain_google_genai import ChatGoogleGenerativeAI
-        api_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        api_key = gemini_key
         if not api_key or api_key == "your_gemini_api_key_here":
             logger.warning("GEMINI_API_KEY not found or is placeholder, using default settings or environment.")
         

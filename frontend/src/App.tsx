@@ -18,11 +18,11 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<StartupReport | null>(null);
   const [providers, setProviders] = useState<Record<string, string>>({
-    product: 'gemini',
-    market: 'gemini',
-    finance: 'gemini',
-    marketing: 'gemini',
-    pitch: 'gemini',
+    product: 'groq',
+    market: 'groq',
+    finance: 'groq',
+    marketing: 'groq',
+    pitch: 'groq',
     chat: 'groq'
   });
   
