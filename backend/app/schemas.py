@@ -103,6 +103,21 @@ class PitchDeck(BaseModel):
     slides: List[PitchSlide] = Field(description="10-Slide pitch deck structure")
 
 # ----------------------------------------------------
+class RoadmapStep(BaseModel):
+    step_number: int = Field(description="Step number (1-9)")
+    phase_name: str = Field(description="Name of the startup phase (e.g. Identify a Problem)")
+    status: str = Field(description="Phase status (e.g. Completed, In Progress, Planned)")
+    analysis: str = Field(description="Deep real-time analysis specific to this startup idea")
+    actionable_tasks: List[str] = Field(description="Specific actionable list of tasks to execute this step")
+    strategic_advice: str = Field(description="Venture/expert strategic advice for this step")
+
+class WeeklyTask(BaseModel):
+    week_number: int = Field(description="Week number (1-12)")
+    objective: str = Field(description="Main objective for this week")
+    tasks: List[str] = Field(description="Actionable tasks to complete this week")
+    deliverable: str = Field(description="Expected deliverable/milestone at the end of the week")
+    tips: str = Field(description="Pro tips or shortcuts to achieve this week's goal")
+
 # Master Report Schema
 # ----------------------------------------------------
 class StartupReport(BaseModel):
@@ -111,3 +126,5 @@ class StartupReport(BaseModel):
     finance: FinancialModel
     gtm: GTMStrategy
     pitch_deck: PitchDeck
+    roadmap: List[RoadmapStep] = Field(description="9-step startup operating roadmap")
+    weekly_playbook: List[WeeklyTask] = Field(description="12-week step-by-step customer acquisition playbook")

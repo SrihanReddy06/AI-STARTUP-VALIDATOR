@@ -6,7 +6,9 @@ import {
   Megaphone, 
   Presentation, 
   MessageSquare,
-  Percent
+  Percent,
+  ClipboardList,
+  Calendar
 } from 'lucide-react';
 import type { StartupReport } from '../types';
 import { BoardroomChat } from './BoardroomChat';
@@ -30,10 +32,12 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ report, providers }) => {
-  const [activeTab, setActiveTab] = useState<'canvas' | 'market' | 'finance' | 'marketing' | 'pitch' | 'chat'>('canvas');
+  const [activeTab, setActiveTab] = useState<'canvas' | 'market' | 'finance' | 'marketing' | 'pitch' | 'chat' | 'roadmap'>('canvas');
   const [activeSlide, setActiveSlide] = useState(0);
+  const [roadmapSubTab, setRoadmapSubTab] = useState<'journey' | 'playbook'>('journey');
+  const [selectedRoadmapStep, setSelectedRoadmapStep] = useState(0);
 
-  const { product, market, finance, gtm, pitch_deck } = report;
+  const { product, market, finance, gtm, pitch_deck, roadmap = [], weekly_playbook = [] } = report;
 
   // Formatting financial projections for Recharts
   const projectionData = finance.yearly_projections.map(proj => ({
@@ -77,6 +81,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ report, providers }) => {
             { id: 'market', name: 'Market Analysis', icon: TrendingUp },
             { id: 'finance', name: 'Financial Model', icon: DollarSign },
             { id: 'marketing', name: 'Marketing & GTM', icon: Megaphone },
+            { id: 'roadmap', name: 'Operations Roadmap', icon: ClipboardList },
             { id: 'pitch', name: 'Pitch Deck', icon: Presentation },
             { id: 'chat', name: 'Boardroom Advisors', icon: MessageSquare }
           ].map((tab) => {
@@ -86,7 +91,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ report, providers }) => {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as 'canvas' | 'market' | 'finance' | 'marketing' | 'pitch' | 'chat')}
+                onClick={() => setActiveTab(tab.id as 'canvas' | 'market' | 'finance' | 'marketing' | 'pitch' | 'chat' | 'roadmap')}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -577,7 +582,228 @@ export const Dashboard: React.FC<DashboardProps> = ({ report, providers }) => {
           </div>
         )}
 
-        {/* TAB 5: PITCH DECK PRESENTATION */}
+        {/* TAB 5: OPERATIONS ROADMAP & CHECKLIST */}
+        {activeTab === 'roadmap' && (
+          <div>
+            <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '8px' }}>Operations & Launch Playbook</h1>
+                <p style={{ color: 'var(--text-muted)' }}>Validate demand, set up operations, and execute your week-by-week roadmap to the first customer.</p>
+              </div>
+              
+              <div style={{ display: 'flex', backgroundColor: 'rgba(255,255,255,0.02)', padding: '4px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <button
+                  onClick={() => setRoadmapSubTab('journey')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: roadmapSubTab === 'journey' ? '#4f46e5' : 'transparent',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    transition: 'var(--transition-smooth)'
+                  }}
+                >
+                  9-Step Startup Journey
+                </button>
+                <button
+                  onClick={() => setRoadmapSubTab('playbook')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: roadmapSubTab === 'playbook' ? '#4f46e5' : 'transparent',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    transition: 'var(--transition-smooth)'
+                  }}
+                >
+                  12-Week Playbook
+                </button>
+              </div>
+            </div>
+
+            {roadmapSubTab === 'journey' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px' }}>
+                {/* Left Side Checklist */}
+                <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '600px', overflowY: 'auto' }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, padding: '0 8px 12px 8px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ClipboardList style={{ width: '16px', height: '16px', color: '#818cf8' }} />
+                    Operating Checklist
+                  </h3>
+                  {roadmap.map((step, idx) => {
+                    const isSelected = selectedRoadmapStep === idx;
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => setSelectedRoadmapStep(idx)}
+                        style={{
+                          padding: '12px',
+                          borderRadius: '8px',
+                          border: isSelected ? '1px solid rgba(79, 70, 229, 0.4)' : '1px solid rgba(255,255,255,0.03)',
+                          backgroundColor: isSelected ? 'rgba(79, 70, 229, 0.08)' : 'rgba(255,255,255,0.01)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          transition: 'var(--transition-smooth)'
+                        }}
+                      >
+                        <div style={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          backgroundColor: step.status === 'Completed' ? 'rgba(16, 185, 129, 0.15)' : step.status === 'In Progress' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.05)',
+                          color: step.status === 'Completed' ? '#10b981' : step.status === 'In Progress' ? '#f59e0b' : 'var(--text-muted)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 700,
+                          fontSize: '0.8rem'
+                        }}>
+                          {step.status === 'Completed' ? '✓' : step.step_number}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isSelected ? 'white' : '#cbd5e1' }}>{step.phase_name}</div>
+                          <div style={{ 
+                            fontSize: '0.7rem', 
+                            fontWeight: 700,
+                            color: step.status === 'Completed' ? '#10b981' : step.status === 'In Progress' ? '#f59e0b' : 'var(--text-muted)',
+                            marginTop: '2px'
+                          }}>
+                            {step.status.toUpperCase()}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Right Side Step Workspace */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {roadmap[selectedRoadmapStep] && (
+                    <>
+                      <div className="glass-panel" style={{ padding: '24px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
+                          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'white' }}>
+                            {roadmap[selectedRoadmapStep].phase_name}
+                          </h2>
+                          <span style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            padding: '4px 10px',
+                            borderRadius: '12px',
+                            backgroundColor: roadmap[selectedRoadmapStep].status === 'Completed' ? 'rgba(16, 185, 129, 0.1)' : roadmap[selectedRoadmapStep].status === 'In Progress' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(255,255,255,0.05)',
+                            color: roadmap[selectedRoadmapStep].status === 'Completed' ? '#10b981' : roadmap[selectedRoadmapStep].status === 'In Progress' ? '#f59e0b' : 'var(--text-muted)'
+                          }}>
+                            {roadmap[selectedRoadmapStep].status}
+                          </span>
+                        </div>
+
+                        <p style={{ fontSize: '0.95rem', color: '#cbd5e1', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+                          {roadmap[selectedRoadmapStep].analysis}
+                        </p>
+                      </div>
+
+                      <div className="glass-panel" style={{ padding: '24px' }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'white' }}>Actionable Tasks Checklist</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {roadmap[selectedRoadmapStep].actionable_tasks.map((task, i) => (
+                            <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px', backgroundColor: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', cursor: 'pointer' }}>
+                              <input type="checkbox" style={{ marginTop: '3px', accentColor: '#4f46e5' }} />
+                              <span style={{ fontSize: '0.9rem', color: '#cbd5e1', lineHeight: 1.4 }}>{task}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="glass-panel" style={{ padding: '20px', backgroundColor: 'rgba(129, 140, 248, 0.02)', border: '1px dashed rgba(129, 140, 248, 0.2)', borderRadius: '10px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#818cf8', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                          💡 Strategic Pro-Tip
+                        </span>
+                        <p style={{ fontSize: '0.85rem', color: '#cbd5e1', lineHeight: 1.5 }}>
+                          {roadmap[selectedRoadmapStep].strategic_advice}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {roadmapSubTab === 'playbook' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div className="glass-panel" style={{ padding: '20px', display: 'flex', gap: '16px', alignItems: 'center', backgroundColor: 'rgba(6, 182, 212, 0.02)', border: '1px solid rgba(6, 182, 212, 0.1)' }}>
+                  <div style={{ padding: '10px', backgroundColor: 'rgba(6, 182, 212, 0.1)', color: '#06b6d4', borderRadius: '8px' }}>
+                    <Calendar style={{ width: '24px', height: '24px' }} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'white' }}>12-Week Customer Acquisition Execution Guide</h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      A localized, week-by-week playbook outlining exact targets and campaign execution tasks to secure your first paying customer.
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+                  {weekly_playbook.map((week, idx) => (
+                    <div key={idx} className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '16px' }}>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#06b6d4', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Week {week.week_number}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', backgroundColor: 'rgba(255,255,255,0.03)', padding: '2px 6px', borderRadius: '4px' }}>
+                            Targeting Launch
+                          </span>
+                        </div>
+
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'white', marginBottom: '12px', lineHeight: 1.4 }}>
+                          {week.objective}
+                        </h4>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                          {week.tasks.map((task, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                              <input type="checkbox" style={{ marginTop: '3px', accentColor: '#06b6d4' }} />
+                              <span style={{ fontSize: '0.8rem', color: '#cbd5e1', lineHeight: 1.3 }}>{task}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '12px' }}>
+                        <div style={{ marginBottom: '8px' }}>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', fontWeight: 700 }}>
+                            End-of-Week Deliverable
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: 'white', fontWeight: 600, display: 'block', marginTop: '2px' }}>
+                            {week.deliverable}
+                          </span>
+                        </div>
+
+                        <div style={{ padding: '8px', backgroundColor: 'rgba(255,255,255,0.01)', borderRadius: '6px', borderLeft: '3px solid #06b6d4' }}>
+                          <span style={{ fontSize: '0.65rem', color: '#06b6d4', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>
+                            Growth Tip
+                          </span>
+                          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.3 }}>
+                            {week.tips}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 6: PITCH DECK PRESENTATION */}
         {activeTab === 'pitch' && (
           <div>
             <div style={{ marginBottom: '24px' }}>

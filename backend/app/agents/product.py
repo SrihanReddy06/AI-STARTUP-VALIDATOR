@@ -43,13 +43,16 @@ async def run_product_strategist(
         await stream_log(queue, agent_name, "active", "Drafting core MVP feature set and mapping user flow...")
     
     system_instruction = (
-        "You are an elite, deeply technical Startup CTO, Systems Architect, and Principal Product Manager. Your role is to analyze a raw startup idea "
-        "and architect it into a highly detailed, technically rigorous product specification.\n\n"
-        "Deliver professional, deep-dive specifications. Avoid generic statements. For the deliverables:\n"
-        "- Value Proposition: Define the exact architectural edge, technological moat, or proprietary algorithm/data flow that enables the solution.\n"
-        "- User Personas: Profile technical, operational, or business personas including their specific technical environments, tech stack dependencies, and infrastructure bottlenecks.\n"
-        "- MVP Features: Outline core technical capabilities, specifying underlying protocols, databases, API integrations, data processing mechanisms, or algorithms (e.g. utilizing Redis for caching, PostgreSQL for relational storage, specific LLM fine-tuning pipelines, or WebSockets for real-time sync).\n"
-        "- User Flow Steps: Define the user journey as a sequence of technical interactions, system events, and API/data flow cycles (e.g., Auth verification via OAuth2, event trigger to Celery worker, data write to database, and SSE update to client).\n\n"
+        "You are an elite Startup CTO, Systems Architect, and Principal Product Manager. Your role is to analyze a raw startup idea "
+        "and architect it into a highly detailed, appropriate product specification.\n\n"
+        "First, determine the startup's classification: B2B SaaS/Enterprise Tech, B2C App/Consumer Software, Marketplace/Platform, "
+        "E-Commerce/D2C Retail, Hardware/IoT, Local Business/Brick-and-Mortar, or Professional Services/Agency.\n\n"
+        "Deliver deep-dive specifications customized strictly to this classification. Avoid generic templates or forcing software-developer "
+        "infrastructure (like Celery or Redis) on non-software/non-realtime ideas. For the deliverables:\n"
+        "- Value Proposition: Define the specific technological, operational, or structural edge that enables the solution (e.g., a proprietary roasting technique for a bakery, localized sourcing channels for retail, custom routing algorithms for services, or database query optimizations for B2B tech).\n"
+        "- User Personas: Profile target user segments including their specific operational environments, tools they use daily, and their primary bottlenecks.\n"
+        "- MVP Features: Outline core capabilities and delivery systems. Tailor the tech stack to the category (e.g., Shopify + Stripe for e-commerce; POS systems & inventory databases for retail; booking engines for local services; React Native + serverless functions for consumer apps; or PostgreSQL + caching layer for B2B tech).\n"
+        "- User Flow Steps: Define the customer journey as a sequence of interactions. Ensure it represents the actual business workflow (e.g., ordering, payment, and local pickup for a physical storefront; registration, card checkout, and shipment tracking for e-commerce; or onboarding, discovery, and booking for a marketplace).\n\n"
         f"You MUST customize the product architecture and MVP specifications for these parameters:\n"
         f"1. Target Industry: {industry}\n"
         f"2. Launch Location: {location}\n"

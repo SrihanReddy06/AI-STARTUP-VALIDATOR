@@ -44,18 +44,20 @@ async def run_market_researcher(
     await stream_log(queue, agent_name, "active", "Estimating TAM, SAM, SOM and drafting SWOT matrix...")
     
     system_instruction = (
-        "You are an expert Technical Market Researcher, Industry Analyst, and Business Intelligence Specialist. Your goal is to conduct "
-        "a highly rigorous, data-driven market landscape analysis, calculate granular market sizes (TAM, SAM, SOM in USD) using bottom-up or top-down methodology, "
-        "identify 3 key technical competitors, and write a deeply analytical SWOT analysis.\n\n"
-        "Focus heavily on the technical and industry dynamics:\n"
-        "- Market Trends: Highlight deep technological macro trends (e.g., shifting to decentralized ledger architectures, growth of edge inference, zero-trust security compliance, or semantic caching).\n"
-        "- Competitor Landscape: Analyze competitors specifically on their technical limitations, proprietary technology moats (IP, patents, open-source adoption), and API/integration limits.\n"
-        "- SWOT Analysis: Document specific infrastructure, compliance (SOC2, HIPAA, GDPR), scalability, technical debt, and system architectural vulnerabilities as core strengths, weaknesses, opportunities, and threats.\n\n"
+        "You are an expert Market Researcher, Industry Analyst, and Business Intelligence Specialist. Your goal is to conduct "
+        "a rigorous, data-driven market landscape analysis, calculate market sizes (TAM, SAM, SOM in USD) using bottom-up or top-down methodology, "
+        "identify 3 key competitors, and write a deeply analytical SWOT analysis.\n\n"
+        "First, determine the startup's classification: B2B SaaS, B2C App, Marketplace, E-Commerce/Retail, Hardware/IoT, Local Business, or Agency.\n\n"
+        "Tailor the SWOT analysis and market trends strictly to this classification and the target region, avoiding default IT/software compliance terms (like SOC2/HIPAA) for non-enterprise ideas:\n"
+        "- Market Trends: Highlight macro trends relevant to the sector and region (e.g., supply chain decarbonization for retail; rise of quick-commerce in South Asia; zero-trust security for B2B fintech; or health regulations for local food options).\n"
+        "- Competitor Landscape: Analyze competitors on their product features, pricing models, weaknesses, and regional presence.\n"
+        "- SWOT Analysis: Document internal strengths/weaknesses and external opportunities/threats that represent the true operational reality of the business (e.g., physical lease overheads, shipping costs, customer trust, regulatory compliance, or technical scaling limits).\n\n"
         f"GEOGRAPHIC & SECTOR TAILORING DIRECTIVES:\n"
         f"- Target Industry Sector: {industry}\n"
         f"- Target Region/Location: {location}\n"
         f"- Focus your market sizing (TAM, SAM, SOM in USD) and competitor identification strictly on the specified region: {location}.\n"
-        f"- If the region is India / South Asia, compute realistic market sizes reflecting the local economic landscape, ARPU (Average Revenue Per User) standards, and purchasing power parity (PPP), and prioritize actual local competitors or global solutions popular in that region.\n\n"
+        f"- Compute realistic, localized market sizes (TAM, SAM, SOM) reflecting the target region's economic landscape, purchasing power parity (PPP), and Average Revenue Per User (ARPU) standards (for example, India or Latin America standard ARPU is much lower than US standard ARPU; adjust the size estimates accordingly to keep them realistic).\n"
+        f"- Prioritize actual local competitors or global solutions popular in that region."
         "Use the provided live web search results as real-time context to identify actual competitors and market trends if available. "
         "Ensure all TAM, SAM, and SOM figures are logical, methodologically explained estimates in USD."
     )

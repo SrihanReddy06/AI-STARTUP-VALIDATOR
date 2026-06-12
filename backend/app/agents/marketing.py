@@ -45,17 +45,18 @@ async def run_marketing_agent(
     await stream_log(queue, agent_name, "active", "Creating 12-month launch timeline and determining growth KPIs...")
     
     system_instruction = (
-        "You are a sophisticated Technical CMO, Developer Relations (DevRel) Director, and growth engineering expert. Your goal is to design "
-        "a high-impact Go-To-Market (GTM) strategy optimized for modern tech adoption, product-led growth (PLG), or enterprise acquisition.\n\n"
-        "Structure the strategy with high technical fidelity:\n"
-        "- Brand Name & Slogans: Brainstorm catchy, modern tech brand names and engineering-centric or business-value-focused taglines.\n"
-        "- Marketing Channels: Detail B2B or B2C acquisition loops (e.g., programmatic SEO for API/library queries, DevRel/open-source seeding, GitHub integration directory marketing, technical documentation optimization, engineering-as-marketing tools like free sandboxes).\n"
-        "- Launch Timeline & KPIs: Build a month-by-month roadmap focusing on developer preview releases, open-beta, security audits, and key system performance/adoption metrics (e.g., SDK downloads, API response usage, monthly active keys, CAC targets, and LTV calculations).\n\n"
+        "You are a sophisticated Chief Marketing Officer (CMO) and Growth Marketing Specialist. Your goal is to design "
+        "a high-impact Go-To-Market (GTM) strategy tailored to the startup category and launch location.\n\n"
+        "First, determine the startup's classification (e.g. B2B SaaS, B2C App, Marketplace, E-Commerce, Local Business) and target customer profile (e.g., local consumers, online shoppers, business executives, developers).\n\n"
+        "Structure the strategy with high fidelity and concrete, quantitative projections, avoiding DevRel/API-centric templates for non-dev ideas:\n"
+        "- Brand Name & Slogans: Brainstorm catchy startup names and taglines localized and appealing to target customers in the target location.\n"
+        "- Marketing Channels: Detail specific customer acquisition loops. The `description` for each channel MUST include concrete numeric calculations: estimated monthly budget allocation in USD, projected CPC (Cost Per Click) or CPM based on regional benchmarks, expected traffic conversion rate (%), and resulting CAC (Customer Acquisition Cost) in USD.\n"
+        "- Launch Timeline & KPIs: Build a month-by-month roadmap. The `actions` list for each phase must be action-oriented and include specific quantitative targets (e.g. 'Spend $800 on localized Google Search Ads targeting high-intent keywords to acquire first 40 paid customers' instead of 'Run online ads').\n"
+        "- Key Metrics: Each target value in `key_metrics` MUST be a concrete number (e.g. '$5.00 CAC', '$60.00 LTV', '3% landing page conversion rate', '1,500 active users') instead of vague text descriptions, and the description must detail the math/logic explaining that target.\n\n"
         f"GEOGRAPHIC & SECTOR TAILORING DIRECTIVES:\n"
         f"- Target Industry: {industry}\n"
         f"- Target Location: {location}\n"
-        f"- You MUST localize the brand naming suggestions and marketing acquisition channels to fit standard business practices, customer preferences, and language norms in '{location}'.\n"
-        f"- For example, B2B SaaS in India might benefit from a combination of global content marketing and regional community building/events. Use the provided search results to model realistic CAC levels and channel budgets."
+        f"- REGIONAL LOCALIZATION: You MUST localize all marketing acquisition channels, CPC bids, and CAC estimates to fit standard business practices and economic benchmarks in '{location}' (e.g. CPCs and ad costs in India/South Asia or Southeast Asia are typically 5x-10x lower than in the US/Western Europe; adjust your projections to reflect these local market realities rather than defaulting to US ad prices). Use the provided search results to model realistic CAC levels and channel budgets."
     )
 
     # Prompt template

@@ -9,6 +9,7 @@ from app.agents.market import run_market_researcher
 from app.agents.finance import run_financial_officer
 from app.agents.marketing import run_marketing_agent
 from app.agents.pitch import run_pitch_agent
+from app.agents.operations import run_operations_agent
 
 logger = logging.getLogger("startup_builder")
 
@@ -167,13 +168,28 @@ async def orchestrate_startup_builder(
             queue=queue
         )
         
-        # Step 5: Programmatic Math Verification for Yearly Projections
+        # Step 5: Run Operations Agent (uses product, market, finance, marketing contexts)
+        operations_provider = providers.get("marketing", "gemini")
+        await stream_log(queue, "Orchestrator", "active", "Spawning Operations & Launch Specialist agent...")
+        operations_output = await run_operations_agent(
+            product_context=product_refinement,
+            market_context=market_analysis,
+            financial_context=financial_model,
+            gtm_context=gtm_strategy,
+            industry=industry,
+            location=location,
+            budget=budget,
+            provider=operations_provider,
+            queue=queue
+        )
+
+        # Step 6: Programmatic Math Verification for Yearly Projections
         await stream_log(queue, "Orchestrator", "active", "Performing programmatic math verification on CFO projections...")
         for projection in financial_model.yearly_projections:
             # Enforce: Profit = Revenue - Expenses
             projection.profit_usd = projection.revenue_usd - projection.expenses_usd
         
-        # Step 6: Pitch Designer
+        # Step 7: Pitch Designer
         pitch_provider = providers.get("pitch", "gemini")
         pitch_deck = await run_pitch_agent(
             product=product_refinement,
@@ -193,7 +209,9 @@ async def orchestrate_startup_builder(
             market=market_analysis,
             finance=financial_model,
             gtm=gtm_strategy,
-            pitch_deck=pitch_deck
+            pitch_deck=pitch_deck,
+            roadmap=operations_output.roadmap,
+            weekly_playbook=operations_output.weekly_playbook
         )
         
         # Stream final success event with the complete report payload

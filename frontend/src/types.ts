@@ -99,12 +99,31 @@ export interface PitchDeck {
   slides: PitchSlide[];
 }
 
+export interface RoadmapStep {
+  step_number: number;
+  phase_name: string;
+  status: string;
+  analysis: string;
+  actionable_tasks: string[];
+  strategic_advice: string;
+}
+
+export interface WeeklyTask {
+  week_number: number;
+  objective: string;
+  tasks: string[];
+  deliverable: string;
+  tips: string;
+}
+
 export interface StartupReport {
   product: ProductRefinement;
   market: MarketAnalysis;
   finance: FinancialModel;
   gtm: GTMStrategy;
   pitch_deck: PitchDeck;
+  roadmap: RoadmapStep[];
+  weekly_playbook: WeeklyTask[];
 }
 
 export interface AgentLog {
