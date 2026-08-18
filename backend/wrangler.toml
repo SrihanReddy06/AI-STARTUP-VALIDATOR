@@ -1,0 +1,4 @@
+name = "ai-startup-validator-backend"
+main = "app/main.py"
+compatibility_date = "2024-04-05"
+compatibility_flags = ["python_workers"]
