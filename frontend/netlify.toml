@@ -4,7 +4,7 @@
 
 [build.environment]
   # Set production API base for Netlify builds.
-  VITE_API_BASE = "https://ai-startup-validator-backend.onrender.com"
+  VITE_API_BASE = "https://ai-startup-validator-chi.vercel.app"
 
 [[redirects]]
   from = "/*"
