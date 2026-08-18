@@ -5,7 +5,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 # DB path: backend/startup_builder.db
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, "startup_builder.db")
+DB_PATH = os.getenv("DATABASE_PATH", os.path.join(BASE_DIR, "startup_builder.db"))
 DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 # Connect args needed for SQLite threads
