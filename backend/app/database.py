@@ -3,9 +3,14 @@ from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-# DB path: backend/startup_builder.db
+# DB path: backend/startup_builder.db with fallback to /tmp on serverless environments
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.getenv("DATABASE_PATH", os.path.join(BASE_DIR, "startup_builder.db"))
+if os.getenv("DATABASE_PATH"):
+    DB_PATH = os.getenv("DATABASE_PATH")
+elif os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+    DB_PATH = "/tmp/startup_builder.db"
+else:
+    DB_PATH = os.path.join(BASE_DIR, "startup_builder.db")
 DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 # Connect args needed for SQLite threads

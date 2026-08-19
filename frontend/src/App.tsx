@@ -3,16 +3,16 @@ import './styles/theme.css';
 import { IdeaForm } from './components/IdeaForm';
 import { Dashboard } from './components/Dashboard';
 import type { StartupReport } from './types';
-import { RefreshCw, Bot, History, Trash2, X } from 'lucide-react';
-
-interface HistoryItem {
-  id: number;
-  idea: string;
-  brand_name: string;
-  status?: string;
-  error_message?: string;
-  created_at: string;
-}
+import { RefreshCw, Bot, History, Trash2, X, Activity } from 'lucide-react';
+import {
+  fetchHistory as apiFetchHistory,
+  fetchHistoryDetail as apiFetchHistoryDetail,
+  deleteHistoryItem as apiDeleteHistoryItem,
+  generateStartup as apiGenerateStartup,
+  checkBackendHealth,
+  API_BASE,
+  type HistoryItem,
+} from './services/api';
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +26,9 @@ function App() {
     chat: 'groq'
   });
   
+  // Backend Connection status
+  const [backendConnected, setBackendConnected] = useState<boolean | null>(null);
+
   // History states
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [historyList, setHistoryList] = useState<HistoryItem[]>([]);
@@ -40,16 +43,16 @@ function App() {
     }
   };
 
-  const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:8000';
+  const pingBackend = async () => {
+    const health = await checkBackendHealth();
+    setBackendConnected(health.ok);
+  };
 
-  const fetchHistory = async () => {
+  const loadHistory = async () => {
     try {
       setIsHistoryLoading(true);
-      const res = await fetch(`${API_BASE}/api/history`);
-      if (res.ok) {
-        const data = await res.json();
-        setHistoryList(data);
-      }
+      const data = await apiFetchHistory();
+      setHistoryList(data);
     } catch (err) {
       console.error('Failed to fetch history:', err);
     } finally {
@@ -58,11 +61,11 @@ function App() {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchHistory();
-    }, 0);
+    pingBackend();
+    loadHistory();
+    const interval = setInterval(pingBackend, 15000);
     return () => {
-      clearTimeout(timer);
+      clearInterval(interval);
       clearPollInterval();
     };
   }, []);
@@ -71,49 +74,41 @@ function App() {
     clearPollInterval();
     try {
       setIsLoading(true);
-      const res = await fetch(`${API_BASE}/api/history/${id}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.status === 'completed') {
-          setReport(data.report);
-          setIsHistoryOpen(false);
-          setIsLoading(false);
-        } else if (data.status === 'processing') {
-          // It's still processing! Hook into its polling!
-          setReport(null);
-          setIsHistoryOpen(false);
-          pollRef.current = setInterval(async () => {
-            try {
-              const pollRes = await fetch(`${API_BASE}/api/history/${id}`);
-              if (pollRes.ok) {
-                const planDetail = await pollRes.json();
-                if (planDetail.status === 'completed') {
-                  clearPollInterval();
-                  setReport(planDetail.report);
-                  setIsLoading(false);
-                  fetchHistory();
-                } else if (planDetail.status === 'failed') {
-                  clearPollInterval();
-                  setIsLoading(false);
-                  alert(`Generation failed: ${planDetail.error_message || 'Unknown error'}`);
-                  fetchHistory();
-                }
-              }
-            } catch (err) {
-              console.error('Polling error:', err);
-            }
-          }, 3000);
-        } else if (data.status === 'failed') {
-          setIsLoading(false);
-          alert(`This generation failed: ${data.error_message || 'Unknown error'}`);
-        }
-      } else {
-        alert('Failed to load startup report.');
+      const data = await apiFetchHistoryDetail(id);
+      if (data.status === 'completed' && data.report) {
+        setReport(data.report);
+        setIsHistoryOpen(false);
         setIsLoading(false);
+      } else if (data.status === 'processing') {
+        // Hook into polling
+        setReport(null);
+        setIsHistoryOpen(false);
+        pollRef.current = setInterval(async () => {
+          try {
+            const planDetail = await apiFetchHistoryDetail(id);
+            if (planDetail.status === 'completed' && planDetail.report) {
+              clearPollInterval();
+              setReport(planDetail.report);
+              setIsLoading(false);
+              loadHistory();
+            } else if (planDetail.status === 'failed') {
+              clearPollInterval();
+              setIsLoading(false);
+              alert(`Generation failed: ${planDetail.error_message || 'Unknown error'}`);
+              loadHistory();
+            }
+          } catch (err) {
+            console.error('Polling error:', err);
+          }
+        }, 3000);
+      } else if (data.status === 'failed') {
+        setIsLoading(false);
+        alert(`This generation failed: ${data.error_message || 'Unknown error'}`);
       }
     } catch (err) {
       console.error('Error loading history item:', err);
       setIsLoading(false);
+      alert('Failed to load startup report.');
     }
   };
 
@@ -121,10 +116,8 @@ function App() {
     e.stopPropagation();
     if (!confirm('Are you sure you want to delete this startup from history?')) return;
     try {
-      const res = await fetch(`${API_BASE}/api/history/${id}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
+      const ok = await apiDeleteHistoryItem(id);
+      if (ok) {
         setHistoryList((prev) => prev.filter((item) => item.id !== id));
       }
     } catch (err) {
@@ -140,44 +133,26 @@ function App() {
     clearPollInterval();
 
     try {
-      const response = await fetch(`${API_BASE}/api/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          idea,
-          providers: chosenProviders
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to start background generation task.');
-      }
-
-      const initResult = await response.json();
+      const initResult = await apiGenerateStartup(idea, chosenProviders);
       const planId = initResult.plan_id;
       
       // Refresh history list so the new plan shows up immediately
-      fetchHistory();
+      loadHistory();
 
       // Poll database for completion status
       pollRef.current = setInterval(async () => {
         try {
-          const pollResponse = await fetch(`${API_BASE}/api/history/${planId}`);
-          if (pollResponse.ok) {
-            const planDetail = await pollResponse.json();
-            if (planDetail.status === 'completed') {
-              clearPollInterval();
-              setReport(planDetail.report);
-              setIsLoading(false);
-              fetchHistory();
-            } else if (planDetail.status === 'failed') {
-              clearPollInterval();
-              setIsLoading(false);
-              alert(`Generation failed: ${planDetail.error_message || 'Unknown error'}`);
-              fetchHistory();
-            }
+          const planDetail = await apiFetchHistoryDetail(planId);
+          if (planDetail.status === 'completed' && planDetail.report) {
+            clearPollInterval();
+            setReport(planDetail.report);
+            setIsLoading(false);
+            loadHistory();
+          } else if (planDetail.status === 'failed') {
+            clearPollInterval();
+            setIsLoading(false);
+            alert(`Generation failed: ${planDetail.error_message || 'Unknown error'}`);
+            loadHistory();
           }
         } catch (err) {
           console.error('Polling error:', err);
@@ -231,6 +206,56 @@ function App() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Backend Connection Indicator */}
+          <div
+            title={`Backend: ${API_BASE} (${backendConnected === true ? 'Connected' : backendConnected === false ? 'Offline - check backend server' : 'Checking connection...'})`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: '20px',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              backgroundColor: backendConnected === true 
+                ? 'rgba(34, 197, 94, 0.1)' 
+                : backendConnected === false 
+                ? 'rgba(239, 68, 68, 0.1)' 
+                : 'rgba(156, 163, 175, 0.1)',
+              border: `1px solid ${
+                backendConnected === true 
+                  ? 'rgba(34, 197, 94, 0.3)' 
+                  : backendConnected === false 
+                  ? 'rgba(239, 68, 68, 0.3)' 
+                  : 'rgba(156, 163, 175, 0.3)'
+              }`,
+              color: backendConnected === true 
+                ? '#4ade80' 
+                : backendConnected === false 
+                ? '#f87171' 
+                : '#9ca3af',
+              cursor: 'pointer'
+            }}
+            onClick={pingBackend}
+          >
+            {backendConnected === true ? (
+              <>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e', boxShadow: '0 0 8px #22c55e' }} />
+                <span>Backend Connected</span>
+              </>
+            ) : backendConnected === false ? (
+              <>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
+                <span>Backend Offline</span>
+              </>
+            ) : (
+              <>
+                <Activity style={{ width: '12px', height: '12px', animation: 'spin 2s linear infinite' }} />
+                <span>Checking Backend...</span>
+              </>
+            )}
+          </div>
+
           <button
             onClick={() => setIsHistoryOpen(true)}
             className="btn btn-secondary"

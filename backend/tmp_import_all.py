@@ -1,5 +1,7 @@
-import sys, traceback
-sys.path.insert(0, r'c:\Users\srihan\OneDrive\Pictures\Desktop\multi agent startup builder\backend')
+import os, sys, traceback
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 modules = [
     'app.agents.product',
     'app.agents.market',

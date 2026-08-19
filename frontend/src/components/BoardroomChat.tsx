@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Loader } from 'lucide-react';
 import type { ChatMessage, StartupReport } from '../types';
+import { getBoardroomChatUrl } from '../services/api';
 
 interface BoardroomChatProps {
   report: StartupReport;
@@ -43,7 +44,7 @@ export const BoardroomChat: React.FC<BoardroomChatProps> = ({ report, providers 
 
     try {
       // Connect to the streaming chat SSE endpoint
-      const response = await fetch('http://localhost:8000/api/chat', {
+      const response = await fetch(getBoardroomChatUrl(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

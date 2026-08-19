@@ -34,14 +34,35 @@ logger = logging.getLogger("startup_builder")
 
 app = FastAPI(title="Multi-Agent Startup Builder API")
 
-# Enable CORS for frontend integration
+# Enable CORS for frontend integration (supports custom ALLOWED_ORIGINS env var or defaults to *)
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "*")
+if allowed_origins_env == "*" or not allowed_origins_env.strip():
+    cors_origins = ["*"]
+    allow_credentials = False
+else:
+    cors_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+    allow_credentials = True
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=cors_origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+def root():
+    return {
+        "status": "ok",
+        "message": "AI Startup Validator API is online",
+        "docs": "/docs",
+        "health": "/api/health"
+    }
+
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok", "message": "Server is running"}
 
 class GenerateRequest(BaseModel):
     idea: str

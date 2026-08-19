@@ -1,8 +1,10 @@
+import os
 import sys
 import traceback
 
-# Ensure backend package is on sys.path
-sys.path.insert(0, r'c:\Users\srihan\OneDrive\Pictures\Desktop\multi agent startup builder\backend')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
 try:
     import importlib
