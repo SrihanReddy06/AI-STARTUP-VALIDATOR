@@ -22,7 +22,12 @@
       "dest": "/api/index.py"
     },
     {
-      "handle": "filesystem"
+      "src": "/assets/(.*)",
+      "dest": "/frontend/assets/$1"
+    },
+    {
+      "src": "/favicon.(.*)",
+      "dest": "/frontend/favicon.$1"
     },
     {
       "src": "/(.*)",
