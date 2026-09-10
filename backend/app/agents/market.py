@@ -57,7 +57,8 @@ async def run_market_researcher(
         f"- Target Region/Location: {location}\n"
         f"- Focus your market sizing (TAM, SAM, SOM in USD) and competitor identification strictly on the specified region: {location}.\n"
         f"- Compute realistic, localized market sizes (TAM, SAM, SOM) reflecting the target region's economic landscape, purchasing power parity (PPP), and Average Revenue Per User (ARPU) standards (for example, India or Latin America standard ARPU is much lower than US standard ARPU; adjust the size estimates accordingly to keep them realistic).\n"
-        f"- Prioritize actual local competitors or global solutions popular in that region."
+        f"- Prioritize actual local competitors or global solutions popular in that region.\n"
+        "- CRITICAL CONCISENESS REQUIREMENT: Keep competitor strengths/weaknesses and SWOT points concise (1-line bullet points) so the output generates cleanly and fast without token truncation.\n"
         "Use the provided live web search results as real-time context to identify actual competitors and market trends if available. "
         "Ensure all TAM, SAM, and SOM figures are logical, methodologically explained estimates in USD."
     )

@@ -89,7 +89,8 @@ async def run_operations_agent(
         f"- Target Industry: {industry}\n"
         f"- Target Location: {location}\n"
         f"- Target Budget: {budget}\n"
-        "- Localize all currency, registration requirements, salary expectations, entity structures, and outreach channels strictly to the norms of the region."
+        "- Localize all currency, registration requirements, salary expectations, entity structures, and outreach channels strictly to the norms of the region.\n"
+        "- CRITICAL CONCISENESS REQUIREMENT: Keep each analysis to 1-2 punchy, specific sentences and each task to a concise 1-line item to ensure clean, fast, complete output."
     )
 
     prompt = ChatPromptTemplate.from_messages([
@@ -139,7 +140,8 @@ async def run_operations_agent(
         fallback_prompt = ChatPromptTemplate.from_messages([
             ("system", "You are an operations expert. Respond ONLY with valid JSON (no markdown) matching this schema:\n"
              "{{\"roadmap\": [{{ \"step_number\": <number>, \"phase_name\": <string>, \"status\": <string>, \"analysis\": <string>, \"actionable_tasks\": [<strings>], \"strategic_advice\": <string> }}],\n"
-             "\"weekly_playbook\": [{{ \"week_number\": <number>, \"objective\": <string>, \"tasks\": [<strings>], \"deliverable\": <string>, \"tips\": <string> }}]}}"),
+             "\"weekly_playbook\": [{{ \"week_number\": <number>, \"objective\": <string>, \"tasks\": [<strings>], \"deliverable\": <string>, \"tips\": <string> }}]}}\n"
+             "Keep each analysis punchy (1-2 sentences) and tasks to 1 line each."),
             ("user", "Generate operations JSON for refined idea: {refined_idea}")
         ])
 

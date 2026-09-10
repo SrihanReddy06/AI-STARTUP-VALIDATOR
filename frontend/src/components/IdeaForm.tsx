@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Sparkles, Brain, Cpu } from 'lucide-react';
+import { PipelineVisualizer } from './PipelineVisualizer';
 
 interface IdeaFormProps {
   onSubmit: (idea: string, providers: Record<string, string>) => void;
@@ -39,7 +40,7 @@ export const IdeaForm: React.FC<IdeaFormProps> = ({ onSubmit, isLoading }) => {
   };
 
   return (
-    <div className="glass-panel" style={{ padding: '32px', maxWidth: '780px', margin: '40px auto' }}>
+    <div className="glass-panel" style={{ padding: '36px', maxWidth: '940px', margin: '40px auto' }}>
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
         <div style={{ display: 'inline-flex', padding: '12px', background: 'rgba(79, 70, 229, 0.1)', borderRadius: '50%', marginBottom: '16px' }}>
           <Sparkles style={{ width: '32px', height: '32px', color: '#818cf8' }} />
@@ -145,6 +146,11 @@ export const IdeaForm: React.FC<IdeaFormProps> = ({ onSubmit, isLoading }) => {
               <option value="VC Seed Funding ($500k+)">VC Seed Funding ($500k+)</option>
             </select>
           </div>
+        </div>
+
+        {/* Pictorial Multi-Agent Pipeline Visualization */}
+        <div style={{ marginTop: '8px' }}>
+          <PipelineVisualizer mode="preview" providers={providers} />
         </div>
 
         {/* LLM Router Configuration Panel */}

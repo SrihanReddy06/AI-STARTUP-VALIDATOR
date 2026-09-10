@@ -1,7 +1,13 @@
+
+
+
+
+
 import { useState, useEffect, useRef, type MouseEvent } from 'react';
 import './styles/theme.css';
 import { IdeaForm } from './components/IdeaForm';
 import { Dashboard } from './components/Dashboard';
+import { PipelineVisualizer } from './components/PipelineVisualizer';
 import type { StartupReport } from './types';
 import { RefreshCw, Bot, History, Trash2, X, Activity } from 'lucide-react';
 import {
@@ -285,44 +291,12 @@ function App() {
         )}
 
         {isLoading && (
-          <div style={{ padding: '80px 20px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-            <div className="glass-panel" style={{ padding: '48px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
-              <div className="badge-active" style={{ display: 'flex', padding: '16px', background: 'linear-gradient(135deg, rgba(79,70,229,0.2), rgba(147,51,234,0.2))', borderRadius: '50%', border: '1px solid rgba(129,140,248,0.3)', animation: 'pulse 2s infinite' }}>
-                <Bot style={{ color: '#818cf8', width: '48px', height: '48px', animation: 'spin-slow 8s linear infinite' }} />
-              </div>
-              <div>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '8px', color: 'white' }}>Advisory Board Active</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                  Our autonomous agents are analyzing market data, modeling financials, and designing slides in the background. 
-                </p>
-                <p style={{ color: '#818cf8', fontSize: '0.85rem', fontWeight: 600, marginTop: '8px' }}>
-                  You can close this view or browse other saved startups in your History while this completes!
-                </p>
-              </div>
-              <div style={{ width: '100%', height: '4px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden', position: 'relative' }}>
-                <div style={{ 
-                  height: '100%', 
-                  width: '50%', 
-                  background: 'linear-gradient(90deg, #4f46e5, #9333ea)', 
-                  borderRadius: '2px',
-                  position: 'absolute',
-                  animation: 'loading-bar 1.5s infinite ease-in-out'
-                }} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', textAlign: 'left', marginTop: '12px' }}>
-                {[
-                  "Product Strategist Agent: Architecting MVP specification...",
-                  "Market Researcher Agent: Running live competitors web searches...",
-                  "Financial Officer Agent: Formulating unit economics & expenses...",
-                  "Marketing & GTM Agent: Designing PLG loops & SDK taglines...",
-                  "Pitch Designer Agent: Structuring 10-slide investor deck..."
-                ].map((step, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#818cf8', opacity: 0.5, animation: 'pulse 1s infinite' }} />
-                    <span>{step}</span>
-                  </div>
-                ))}
-              </div>
+          <div style={{ padding: '40px 20px', maxWidth: '980px', margin: '0 auto' }}>
+            <PipelineVisualizer mode="active" providers={providers} />
+            <div style={{ textAlign: 'center', marginTop: '20px' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                💡 Tip: You can close this tab or open your <strong style={{ color: '#818cf8', cursor: 'pointer' }} onClick={() => setIsHistoryOpen(true)}>History</strong> to review previously generated proposals while this pipeline completes.
+              </p>
             </div>
           </div>
         )}

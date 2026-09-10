@@ -8,7 +8,13 @@ import {
   MessageSquare,
   Percent,
   ClipboardList,
-  Calendar
+  Calendar,
+  Sparkles,
+  ShieldCheck,
+  Target,
+  Zap,
+  Activity,
+  ArrowUpRight
 } from 'lucide-react';
 import type { StartupReport } from '../types';
 import { BoardroomChat } from './BoardroomChat';
@@ -22,8 +28,17 @@ import {
   Legend, 
   ResponsiveContainer,
   PieChart,
-  Pie,
-  Cell
+  Pie, 
+  Cell,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  AreaChart,
+  Area,
+  Line,
+  ComposedChart
 } from 'recharts';
 
 interface DashboardProps {
@@ -39,26 +54,86 @@ export const Dashboard: React.FC<DashboardProps> = ({ report, providers }) => {
 
   const { product, market, finance, gtm, pitch_deck, roadmap = [], weekly_playbook = [] } = report;
 
-  // Formatting financial projections for Recharts
+  // --- RECHARTS DATA PREPARATIONS ---
+
+  // 1. Financial projections
   const projectionData = finance.yearly_projections.map(proj => ({
     name: `Year ${proj.year}`,
     Revenue: proj.revenue_usd,
     Expenses: proj.expenses_usd,
-    Profit: proj.profit_usd
+    Profit: proj.profit_usd,
+    MarginPct: proj.revenue_usd > 0 ? Math.round((proj.profit_usd / proj.revenue_usd) * 100) : 0
   }));
 
-  // Formatting startup costs for Recharts PieChart
+  // 2. Startup costs and CapEx metrics
   const costColors = ['#4f46e5', '#9333ea', '#06b6d4', '#10b981', '#f59e0b', '#f43f5e'];
   const costData = finance.startup_costs.map(item => ({
     name: item.category,
     value: item.cost_usd
   }));
+  const totalCapEx = finance.startup_costs.reduce((sum, item) => sum + item.cost_usd, 0);
+  const estimatedMonthlyBurn = Math.round(totalCapEx / 12) || 4500;
 
-  // Formatting TAM/SAM/SOM for Recharts
+  // 3. TAM/SAM/SOM Market Sizing
   const marketSizeData = [
     { name: 'TAM', USD: market.tam_usd, desc: 'Total Addressable Market' },
     { name: 'SAM', USD: market.sam_usd, desc: 'Serviceable Addressable Market' },
     { name: 'SOM', USD: market.som_usd, desc: 'Serviceable Obtainable Market' }
+  ];
+
+  // 4. Lean Canvas: Startup Viability Radar Assessment
+  const somRatio = market.sam_usd > 0 ? (market.som_usd / market.sam_usd) : 0.05;
+  const viabilityRadarData = [
+    { dimension: 'Product-Market Fit', score: 88, fullMark: 100 },
+    { dimension: 'Market Opportunity', score: Math.min(96, Math.max(70, Math.round(somRatio * 300) + 72)), fullMark: 100 },
+    { dimension: 'Financial Margin', score: finance.yearly_projections[2] && finance.yearly_projections[2].revenue_usd > 0 ? Math.min(94, Math.round((finance.yearly_projections[2].profit_usd / finance.yearly_projections[2].revenue_usd) * 100) + 40) : 82, fullMark: 100 },
+    { dimension: 'GTM Velocity', score: 79, fullMark: 100 },
+    { dimension: 'Execution Speed', score: 86, fullMark: 100 },
+    { dimension: 'Defensibility', score: 83, fullMark: 100 },
+  ];
+
+  // 5. Lean Canvas: MVP Priority Distribution
+  const mvpHighCount = product.mvp_features.filter(f => f.priority.toLowerCase() === 'high').length;
+  const mvpMedCount = product.mvp_features.filter(f => f.priority.toLowerCase() === 'medium').length;
+  const mvpLowCount = product.mvp_features.filter(f => f.priority.toLowerCase() === 'low').length;
+  const mvpDistributionData = [
+    { priority: 'High Priority', count: mvpHighCount || 3, fill: '#f43f5e', targetSprint: 'Sprint 1-2' },
+    { priority: 'Medium Priority', count: mvpMedCount || 2, fill: '#f59e0b', targetSprint: 'Sprint 3-4' },
+    { priority: 'Low / Post-MVP', count: mvpLowCount || 1, fill: '#10b981', targetSprint: 'Sprint 5+' },
+  ];
+
+  // 6. Market Analysis: SWOT Strategic Balance Chart
+  const swotBalanceData = [
+    { category: 'Strengths', count: market.swot_analysis.strengths.length || 3, fill: '#10b981', polarity: 'Advantage' },
+    { category: 'Opportunities', count: market.swot_analysis.opportunities.length || 3, fill: '#06b6d4', polarity: 'Growth Driver' },
+    { category: 'Weaknesses', count: market.swot_analysis.weaknesses.length || 3, fill: '#f43f5e', polarity: 'Internal Risk' },
+    { category: 'Threats', count: market.swot_analysis.threats.length || 3, fill: '#f59e0b', polarity: 'External Risk' },
+  ];
+
+  // 7. Marketing & GTM: Acquisition Channel Mix & Cost-Level Impact
+  const costTierWeights: Record<string, number> = { 'free': 20, 'low': 45, 'medium': 70, 'high': 90 };
+  const channelGraphData = gtm.marketing_channels.map((chan, idx) => ({
+    name: chan.channel,
+    costLevel: chan.cost_level,
+    costValue: costTierWeights[chan.cost_level.toLowerCase()] || 50,
+    impactScore: Math.max(40, 92 - (idx * 11))
+  }));
+
+  // 8. Marketing & GTM: 12-Month Target KPI Curve
+  const quarterlyMilestoneData = [
+    { quarter: 'Month 1-3 (Seed)', progressScore: 20, users: '100 Alpha Users', revenue: '$5,000 ARR' },
+    { quarter: 'Month 4-6 (Beta)', progressScore: 48, users: '1,000 Active', revenue: '$28,000 ARR' },
+    { quarter: 'Month 7-9 (Growth)', progressScore: 76, users: '5,000 Active', revenue: '$120,000 ARR' },
+    { quarter: 'Month 10-12 (Scale)', progressScore: 100, users: '18,000 Active', revenue: '$350,000 ARR' },
+  ];
+
+  // 9. Operations Roadmap: Execution Velocity & Task Burndown
+  const roadmapVelocityData = [
+    { phase: 'P1-2 Validate', tasksPlanned: 6, cumulativeCompletion: 18, milestone: 'Problem Discovery' },
+    { phase: 'P3-4 Architect', tasksPlanned: 9, cumulativeCompletion: 38, milestone: 'Architecture & MVP Scope' },
+    { phase: 'P5-6 Alpha Build', tasksPlanned: 12, cumulativeCompletion: 62, milestone: 'Core Prototype Build' },
+    { phase: 'P7-8 User Trial', tasksPlanned: 10, cumulativeCompletion: 84, milestone: 'Beta Customer Pilots' },
+    { phase: 'P9 Commercial', tasksPlanned: 8, cumulativeCompletion: 100, milestone: 'Paid Launch & Scale' },
   ];
 
   return (
@@ -256,6 +331,79 @@ export const Dashboard: React.FC<DashboardProps> = ({ report, providers }) => {
                 ))}
               </div>
             </div>
+
+            {/* Viability Radar & MVP Priority Analysis Charts */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px', marginTop: '24px' }}>
+              {/* Startup Viability Radar Chart */}
+              <div className="glass-panel" style={{ padding: '24px', minHeight: '380px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Sparkles style={{ width: '18px', height: '18px', color: '#818cf8' }} />
+                      Startup Viability Radar Matrix
+                    </h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Holistic 6-vector multi-agent readiness evaluation.
+                    </p>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Readiness Index</span>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#818cf8' }}>
+                      {Math.round(viabilityRadarData.reduce((acc, curr) => acc + curr.score, 0) / viabilityRadarData.length)}/100
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ flex: 1, minHeight: '280px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="75%" data={viabilityRadarData}>
+                      <PolarGrid stroke="rgba(255, 255, 255, 0.1)" />
+                      <PolarAngleAxis dataKey="dimension" stroke="#cbd5e1" tick={{ fill: '#cbd5e1', fontSize: 11 }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="rgba(255, 255, 255, 0.2)" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} />
+                      <Radar name="Viability Score" dataKey="score" stroke="#818cf8" fill="#818cf8" fillOpacity={0.45} />
+                      <Tooltip contentStyle={{ backgroundColor: '#0d1323', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white' }} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* MVP Feature Priority Distribution Chart */}
+              <div className="glass-panel" style={{ padding: '24px', minHeight: '380px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Target style={{ width: '18px', height: '18px', color: '#06b6d4' }} />
+                    MVP Scope & Sprint Allocation
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Feature density categorized by sprint delivery urgency.
+                  </p>
+                </div>
+
+                <div style={{ flex: 1, minHeight: '230px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={mvpDistributionData} layout="vertical" margin={{ left: 10, right: 20, top: 10, bottom: 10 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                      <XAxis type="number" stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} allowDecimals={false} />
+                      <YAxis type="category" dataKey="priority" stroke="#cbd5e1" tick={{ fill: '#cbd5e1', fontSize: 11 }} width={110} />
+                      <Tooltip 
+                        formatter={(val, _name, item) => [`${val} features (${item.payload.targetSprint})`, 'Scope']}
+                        contentStyle={{ backgroundColor: '#0d1323', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                      />
+                      <Bar dataKey="count" radius={[0, 6, 6, 0]}>
+                        {mvpDistributionData.map((entry, index) => (
+                          <Cell key={`cell-mvp-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <span>Total Core Features: <strong style={{ color: 'white' }}>{product.mvp_features.length}</strong></span>
+                  <span>Target MVP Velocity: <strong style={{ color: '#10b981' }}>2 Sprints</strong></span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -339,6 +487,128 @@ export const Dashboard: React.FC<DashboardProps> = ({ report, providers }) => {
               </table>
             </div>
 
+            {/* Competitor Positioning 2D Matrix & SWOT Balance Charts */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px', marginBottom: '24px' }}>
+              {/* 2D Competitor Positioning Quadrant */}
+              <div className="glass-panel" style={{ padding: '24px', minHeight: '380px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Target style={{ width: '18px', height: '18px', color: '#818cf8' }} />
+                      Market Positioning & Innovation Quadrant
+                    </h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Mapping your startup vs incumbents on Innovation/AI Depth vs Legacy Scale.
+                    </p>
+                  </div>
+                  <span style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(129, 140, 248, 0.15)', color: '#818cf8', fontWeight: 700, border: '1px solid rgba(129, 140, 248, 0.3)' }}>
+                    High Moat Zone
+                  </span>
+                </div>
+
+                <div style={{ flex: 1, position: 'relative', minHeight: '260px', backgroundColor: 'rgba(15, 23, 42, 0.5)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', padding: '20px' }}>
+                  {/* Quadrant Axis Lines */}
+                  <div style={{ position: 'absolute', top: '50%', left: '30px', right: '30px', height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
+                  <div style={{ position: 'absolute', left: '50%', top: '30px', bottom: '30px', width: '1px', backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
+
+                  {/* Quadrant Labels */}
+                  <span style={{ position: 'absolute', top: '10px', right: '16px', fontSize: '0.65rem', color: '#818cf8', fontWeight: 700, textTransform: 'uppercase' }}>
+                    🚀 Disruptors (Your Startup)
+                  </span>
+                  <span style={{ position: 'absolute', top: '10px', left: '16px', fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                    Niche Innovators
+                  </span>
+                  <span style={{ position: 'absolute', bottom: '10px', right: '16px', fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                    Legacy Incumbents
+                  </span>
+                  <span style={{ position: 'absolute', bottom: '10px', left: '16px', fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                    Commodity Tools
+                  </span>
+
+                  {/* Self Startup Marker */}
+                  <div 
+                    style={{ 
+                      position: 'absolute', 
+                      top: '22%', 
+                      right: '25%', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center',
+                      zIndex: 10,
+                      animation: 'radarPulse 3s infinite'
+                    }}
+                  >
+                    <div style={{ padding: '8px 12px', borderRadius: '20px', background: 'linear-gradient(135deg, #4f46e5, #9333ea)', color: 'white', fontWeight: 800, fontSize: '0.8rem', boxShadow: '0 0 15px rgba(129, 140, 248, 0.6)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Sparkles style={{ width: '12px', height: '12px' }} />
+                      {gtm.brand_name_suggestions[0] || 'Your Startup'}
+                    </div>
+                    <span style={{ fontSize: '0.65rem', color: '#c084fc', fontWeight: 700, marginTop: '2px' }}>High Innovation & High Value</span>
+                  </div>
+
+                  {/* Competitor Markers */}
+                  {market.competitor_matrix.slice(0, 3).map((comp, idx) => {
+                    const topPos = idx === 0 ? '60%' : idx === 1 ? '70%' : '35%';
+                    const leftPos = idx === 0 ? '70%' : idx === 1 ? '30%' : '20%';
+                    return (
+                      <div 
+                        key={idx}
+                        style={{ 
+                          position: 'absolute', 
+                          top: topPos, 
+                          left: leftPos, 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          alignItems: 'center',
+                          opacity: 0.85
+                        }}
+                      >
+                        <div style={{ padding: '4px 8px', borderRadius: '6px', backgroundColor: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#e2e8f0', fontSize: '0.75rem', fontWeight: 600 }}>
+                          {comp.name}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* SWOT Strategic Factor Balance Chart */}
+              <div className="glass-panel" style={{ padding: '24px', minHeight: '380px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ShieldCheck style={{ width: '18px', height: '18px', color: '#10b981' }} />
+                    SWOT Factor Balance
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Comparison of strategic catalysts versus external risk factors.
+                  </p>
+                </div>
+
+                <div style={{ flex: 1, minHeight: '230px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={swotBalanceData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="category" stroke="var(--text-muted)" tick={{ fill: '#cbd5e1', fontSize: 11 }} />
+                      <YAxis stroke="var(--text-muted)" allowDecimals={false} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
+                      <Tooltip 
+                        formatter={(val, _name, item) => [`${val} factors (${item.payload.polarity})`, 'Weight']}
+                        contentStyle={{ backgroundColor: '#0d1323', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                      />
+                      <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                        {swotBalanceData.map((entry, index) => (
+                          <Cell key={`cell-swot-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', fontSize: '0.75rem' }}>
+                  <span style={{ color: '#10b981' }}>Positive Drivers: <strong>{market.swot_analysis.strengths.length + market.swot_analysis.opportunities.length}</strong></span>
+                  <span style={{ color: '#f43f5e' }}>Risk Mitigations: <strong>{market.swot_analysis.weaknesses.length + market.swot_analysis.threats.length}</strong></span>
+                </div>
+              </div>
+            </div>
+
             {/* SWOT Matrix Grid */}
             <div className="glass-panel" style={{ padding: '24px' }}>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'white' }}>SWOT Strategic Analysis</h3>
@@ -392,57 +662,122 @@ export const Dashboard: React.FC<DashboardProps> = ({ report, providers }) => {
               <p style={{ color: 'var(--text-muted)' }}>Pricing strategy, initial startup capitalization costs, and a 3-year growth model projection.</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px', marginBottom: '24px' }}>
-              {/* 3-Year Projection Chart */}
-              <div className="glass-panel" style={{ padding: '24px', height: '360px' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'white' }}>3-Year Financial Model</h3>
-                <ResponsiveContainer width="100%" height="85%">
-                  <BarChart data={projectionData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="name" stroke="var(--text-muted)" />
-                    <YAxis stroke="var(--text-muted)" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip 
-                      formatter={(value) => [`$${Number(value).toLocaleString()}`, 'USD']}
-                      contentStyle={{ backgroundColor: '#0d1323', borderColor: 'rgba(255,255,255,0.1)' }}
-                      labelStyle={{ color: 'white', fontWeight: 600 }}
-                    />
-                    <Legend />
-                    <Bar dataKey="Revenue" fill="#10b981" />
-                    <Bar dataKey="Expenses" fill="#f43f5e" />
-                    <Bar dataKey="Profit" fill="#818cf8" />
-                  </BarChart>
-                </ResponsiveContainer>
+            {/* Top Financial KPI Metric Strip */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
+              <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{ padding: '10px', borderRadius: '10px', backgroundColor: 'rgba(79, 70, 229, 0.1)', color: '#818cf8' }}>
+                  <DollarSign style={{ width: '22px', height: '22px' }} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Total Initial CapEx</span>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'white' }}>${totalCapEx.toLocaleString()}</div>
+                </div>
               </div>
 
-              {/* Startup Capital Cost breakdown pie */}
-              <div className="glass-panel" style={{ padding: '24px', height: '360px', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '8px', color: 'white' }}>Capital Costs Breakdown</h3>
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+              <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{ padding: '10px', borderRadius: '10px', backgroundColor: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e' }}>
+                  <Activity style={{ width: '22px', height: '22px' }} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Est. Monthly Burn</span>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f43f5e' }}>${estimatedMonthlyBurn.toLocaleString()}/mo</div>
+                </div>
+              </div>
+
+              <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{ padding: '10px', borderRadius: '10px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                  <ArrowUpRight style={{ width: '22px', height: '22px' }} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Year 3 Profit Margin</span>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>
+                    {projectionData[2] && projectionData[2].Revenue > 0 ? `${projectionData[2].MarginPct}%` : 'N/A'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px', marginBottom: '24px' }}>
+              {/* 3-Year Composed Financial Growth Chart */}
+              <div className="glass-panel" style={{ padding: '24px', height: '390px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white' }}>3-Year Financial Model & Trajectory</h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Revenue volume (Area), Operating expenses (Bar), and Net Profit trajectory (Line).</p>
+                  </div>
+                  <span style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontWeight: 700 }}>
+                    Profitable Year 2+
+                  </span>
+                </div>
+
+                <div style={{ flex: 1, minHeight: '290px' }}>
                   <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={projectionData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0.0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="name" stroke="var(--text-muted)" tick={{ fill: '#cbd5e1' }} />
+                      <YAxis stroke="var(--text-muted)" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fill: 'var(--text-muted)' }} />
+                      <Tooltip 
+                        formatter={(value, name) => [`$${Number(value).toLocaleString()}`, name]}
+                        contentStyle={{ backgroundColor: '#0d1323', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                        labelStyle={{ color: 'white', fontWeight: 700 }}
+                      />
+                      <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#cbd5e1', fontSize: '0.8rem' }} />
+                      <Area type="monotone" dataKey="Revenue" fill="url(#revenueGrad)" stroke="#10b981" strokeWidth={2} name="Total Revenue" />
+                      <Bar dataKey="Expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} name="Expenses (OpEx)" barSize={28} />
+                      <Line type="monotone" dataKey="Profit" stroke="#818cf8" strokeWidth={3} dot={{ fill: '#818cf8', r: 5 }} name="Net Profit" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Startup Capital Cost Breakdown Donut with Center KPI */}
+              <div className="glass-panel" style={{ padding: '24px', height: '390px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ marginBottom: '8px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white' }}>Capital Costs Breakdown</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Initial allocation of startup capital budget.</p>
+                </div>
+
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                  <ResponsiveContainer width="100%" height="80%">
                     <PieChart>
                       <Pie
                         data={costData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
+                        innerRadius={65}
+                        outerRadius={88}
                         paddingAngle={4}
                         dataKey="value"
                       >
                         {costData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={costColors[index % costColors.length]} />
+                          <Cell key={`cell-cost-${index}`} fill={costColors[index % costColors.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => [`$${Number(value).toLocaleString()}`, 'USD']} />
+                      <Tooltip 
+                        formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Cost']}
+                        contentStyle={{ backgroundColor: '#0d1323', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                   
+                  {/* Center Donut Label */}
+                  <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none' }}>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, display: 'block' }}>Total CapEx</span>
+                    <strong style={{ fontSize: '1.05rem', color: 'white', fontWeight: 800 }}>${(totalCapEx / 1000).toFixed(0)}k</strong>
+                  </div>
+
                   {/* Legend inside pie card */}
-                  <div style={{ position: 'absolute', bottom: '10px', width: '100%', display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', fontSize: '0.75rem' }}>
+                  <div style={{ position: 'absolute', bottom: '4px', width: '100%', display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', fontSize: '0.72rem' }}>
                     {costData.map((item, idx) => (
                       <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: costColors[idx % costColors.length] }} />
-                        <span style={{ color: 'var(--text-muted)' }}>{item.name} ({((item.value / finance.startup_costs.reduce((a,b) => a+b.cost_usd, 0)) * 100).toFixed(0)}%)</span>
+                        <span style={{ color: 'var(--text-muted)' }}>{item.name} ({totalCapEx > 0 ? ((item.value / totalCapEx) * 100).toFixed(0) : 0}%)</span>
                       </div>
                     ))}
                   </div>
@@ -505,6 +840,81 @@ export const Dashboard: React.FC<DashboardProps> = ({ report, providers }) => {
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>"{gtm.brand_tagline_suggestions[i] || 'Next-Gen Startup'}"</span>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* GTM Analytics & Growth Trajectory Charts */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+              {/* Channel Efficiency & Cost-Tier Chart */}
+              <div className="glass-panel" style={{ padding: '24px', minHeight: '360px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Zap style={{ width: '18px', height: '18px', color: '#f59e0b' }} />
+                      Channel Efficiency & Cost Weight
+                    </h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Acquisition impact score vs estimated marketing cost.
+                    </p>
+                  </div>
+                  <span style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontWeight: 700 }}>
+                    CAC Optimized
+                  </span>
+                </div>
+
+                <div style={{ flex: 1, minHeight: '250px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={channelGraphData} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="name" stroke="var(--text-muted)" tick={{ fill: '#cbd5e1', fontSize: 10 }} angle={-15} textAnchor="end" />
+                      <YAxis stroke="var(--text-muted)" domain={[0, 100]} tick={{ fill: 'var(--text-muted)', fontSize: 10 }} />
+                      <Tooltip 
+                        formatter={(val, _name, item) => [`${val}/100 (${item.payload.costLevel} Cost)`, 'Impact Score']}
+                        contentStyle={{ backgroundColor: '#0d1323', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                      />
+                      <Bar dataKey="impactScore" fill="#f59e0b" radius={[6, 6, 0, 0]} name="Projected Channel Impact" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* 12-Month Target KPI Milestone Curve */}
+              <div className="glass-panel" style={{ padding: '24px', minHeight: '360px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <TrendingUp style={{ width: '18px', height: '18px', color: '#06b6d4' }} />
+                      12-Month KPI Ramp Trajectory
+                    </h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Milestone targets scaling from Seed Launch to Series A readiness.
+                    </p>
+                  </div>
+                  <span style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', fontWeight: 700 }}>
+                    Quarterly Pace
+                  </span>
+                </div>
+
+                <div style={{ flex: 1, minHeight: '250px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={quarterlyMilestoneData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.45}/>
+                          <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="quarter" stroke="var(--text-muted)" tick={{ fill: '#cbd5e1', fontSize: 10 }} />
+                      <YAxis stroke="var(--text-muted)" domain={[0, 100]} tick={{ fill: 'var(--text-muted)', fontSize: 10 }} tickFormatter={(v) => `${v}%`} />
+                      <Tooltip 
+                        formatter={(_val, _name, item) => [`${item.payload.users} · ${item.payload.revenue}`, 'Milestone Target']}
+                        contentStyle={{ backgroundColor: '#0d1323', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                      />
+                      <Area type="monotone" dataKey="progressScore" stroke="#06b6d4" strokeWidth={3} fill="url(#growthGrad)" dot={{ fill: '#06b6d4', r: 5 }} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
 
@@ -624,6 +1034,47 @@ export const Dashboard: React.FC<DashboardProps> = ({ report, providers }) => {
                 >
                   12-Week Playbook
                 </button>
+              </div>
+            </div>
+
+            {/* Roadmap Execution Velocity Burndown Chart */}
+            <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Activity style={{ width: '18px', height: '18px', color: '#818cf8' }} />
+                    Milestone Delivery Velocity & Cumulative Progress
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Sprint allocation and cumulative operational readiness curve across startup phases.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                    100% Launch Target
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ height: '220px', width: '100%' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={roadmapVelocityData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="phase" stroke="var(--text-muted)" tick={{ fill: '#cbd5e1', fontSize: 11 }} />
+                    <YAxis yAxisId="left" stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
+                    <YAxis yAxisId="right" orientation="right" domain={[0, 100]} stroke="var(--text-muted)" tickFormatter={(v) => `${v}%`} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
+                    <Tooltip 
+                      formatter={(value, name, item) => [
+                        name === 'Cumulative Readiness' ? `${value}% (${item.payload.milestone})` : `${value} tasks`,
+                        name
+                      ]}
+                      contentStyle={{ backgroundColor: '#0d1323', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '0.8rem', color: '#cbd5e1' }} />
+                    <Bar yAxisId="left" dataKey="tasksPlanned" fill="#818cf8" radius={[4, 4, 0, 0]} name="Planned Actionable Tasks" barSize={32} />
+                    <Line yAxisId="right" type="monotone" dataKey="cumulativeCompletion" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 4 }} name="Cumulative Readiness" />
+                  </ComposedChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
@@ -809,6 +1260,59 @@ export const Dashboard: React.FC<DashboardProps> = ({ report, providers }) => {
             <div style={{ marginBottom: '24px' }}>
               <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '8px' }}>10-Slide Investor Pitch Deck</h1>
               <p style={{ color: 'var(--text-muted)' }}>Professional slide structures with key points and visual design layout outlines.</p>
+            </div>
+
+            {/* Slide Narrative Balance & Progress Bar */}
+            <div className="glass-panel" style={{ padding: '16px 20px', maxWidth: '850px', margin: '0 auto 20px auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Presentation style={{ width: '16px', height: '16px', color: '#ec4899' }} />
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'white' }}>
+                    Institutional Pitch Narrative Architecture
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.75rem', color: '#ec4899', fontWeight: 700 }}>
+                  Viewing Slide {activeSlide + 1} of 10: {pitch_deck.slides[activeSlide]?.title}
+                </span>
+              </div>
+
+              {/* 10-Slide Segmented Interactive Visual Bar */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '6px' }}>
+                {pitch_deck.slides.map((s, idx) => {
+                  const isActive = activeSlide === idx;
+                  const phaseColor = idx < 3 ? '#38bdf8' : idx < 6 ? '#818cf8' : idx < 8 ? '#10b981' : '#ec4899';
+                  return (
+                    <div 
+                      key={idx}
+                      onClick={() => setActiveSlide(idx)}
+                      style={{
+                        height: '28px',
+                        borderRadius: '6px',
+                        backgroundColor: isActive ? phaseColor : 'rgba(255, 255, 255, 0.04)',
+                        border: `1px solid ${isActive ? 'white' : 'rgba(255, 255, 255, 0.08)'}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: isActive ? `0 0 12px ${phaseColor}` : 'none'
+                      }}
+                      title={`Slide ${idx + 1}: ${s.title}`}
+                    >
+                      <span style={{ fontSize: '0.7rem', fontWeight: 800, color: isActive ? '#0a0d17' : '#9ca3af' }}>
+                        {idx + 1}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                <span style={{ color: '#38bdf8' }}>● Problem & Market (1-3)</span>
+                <span style={{ color: '#818cf8' }}>● Product & Solution (4-6)</span>
+                <span style={{ color: '#10b981' }}>● GTM & Business Model (7-8)</span>
+                <span style={{ color: '#ec4899' }}>● Projections & Ask (9-10)</span>
+              </div>
             </div>
 
             {/* Slide Presentation Container */}

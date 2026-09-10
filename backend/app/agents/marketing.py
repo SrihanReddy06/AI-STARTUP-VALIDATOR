@@ -56,7 +56,8 @@ async def run_marketing_agent(
         f"GEOGRAPHIC & SECTOR TAILORING DIRECTIVES:\n"
         f"- Target Industry: {industry}\n"
         f"- Target Location: {location}\n"
-        f"- REGIONAL LOCALIZATION: You MUST localize all marketing acquisition channels, CPC bids, and CAC estimates to fit standard business practices and economic benchmarks in '{location}' (e.g. CPCs and ad costs in India/South Asia or Southeast Asia are typically 5x-10x lower than in the US/Western Europe; adjust your projections to reflect these local market realities rather than defaulting to US ad prices). Use the provided search results to model realistic CAC levels and channel budgets."
+        f"- REGIONAL LOCALIZATION: You MUST localize all marketing acquisition channels, CPC bids, and CAC estimates to fit standard business practices and economic benchmarks in '{location}' (e.g. CPCs and ad costs in India/South Asia or Southeast Asia are typically 5x-10x lower than in the US/Western Europe; adjust your projections to reflect these local market realities rather than defaulting to US ad prices). Use the provided search results to model realistic CAC levels and channel budgets.\n"
+        "- CRITICAL CONCISENESS REQUIREMENT: Keep channel descriptions and launch actions punchy and concise (1-2 sentences each) so output generates cleanly and fast."
     )
 
     # Prompt template

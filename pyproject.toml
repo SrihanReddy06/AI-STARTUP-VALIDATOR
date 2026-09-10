@@ -4,3 +4,6 @@ version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = []
 classifiers = [ "Private :: Do Not Upload" ]
+
+[tool.pyrefly]
+search-path = ["backend"]

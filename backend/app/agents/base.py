@@ -45,11 +45,13 @@ def get_llm(provider: str, model_name: Optional[str] = None, temperature: float 
             logger.warning("GROQ_API_KEY not found or is placeholder, using default settings or environment.")
         
         # Valid active Groq production model
-        model = model_name or os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+        model = model_name or os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
         return ChatGroq(
             model=model,
             temperature=temperature,
-            groq_api_key=api_key
+            groq_api_key=api_key,
+            max_tokens=8000,
+            max_retries=3,
         )
     else:  # Default to gemini
         from langchain_google_genai import ChatGoogleGenerativeAI
@@ -62,33 +64,151 @@ def get_llm(provider: str, model_name: Optional[str] = None, temperature: float 
         return ChatGoogleGenerativeAI(
             model=model,
             temperature=temperature,
-            google_api_key=api_key
+            google_api_key=api_key,
+            max_output_tokens=8192,
         )
+
+def _repair_truncated_json(text: str) -> Optional[str]:
+    """
+    Repairs truncated JSON strings by closing unclosed strings, removing incomplete
+    key/values, and closing unclosed arrays and objects.
+    """
+    if not text or "{" not in text:
+        return None
+
+    import re
+    start_idx = text.find("{")
+    s = text[start_idx:].strip()
+
+    in_string = False
+    escape = False
+    stack = []
+
+    for char in s:
+        if escape:
+            escape = False
+            continue
+        if char == "\\":
+            escape = True
+            continue
+        if char == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+
+        if char in "{[":
+            stack.append(char)
+        elif char in "}]":
+            if stack:
+                top = stack[-1]
+                if (char == "}" and top == "{") or (char == "]" and top == "["):
+                    stack.pop()
+
+    if not stack and not in_string:
+        return s
+
+    if in_string:
+        s += '"'
+
+    s = re.sub(r",\s*$", "", s)
+    s = re.sub(r":\s*\"[^\"]*\"?$", "", s)
+    s = re.sub(r":\s*$", "", s)
+    s = re.sub(r",\s*$", "", s)
+    s = re.sub(r",\s*\"[^\"]*\"\s*$", "", s)
+
+    for open_char in reversed(stack):
+        if open_char == "{":
+            s += "}"
+        elif open_char == "[":
+            s += "]"
+
+    s = re.sub(r",\s*([\]}])", r"\1", s)
+    return s
 
 def extract_json_object(text: str) -> Optional[str]:
     """
-    Extracts the first complete JSON object { ... } from text.
-    Handles nested braces correctly using a depth counter.
+    Extracts and parses a complete or repairable JSON object { ... } from text.
+    Handles nested braces, ignores braces in strings, cleans trailing commas,
+    and repairs incomplete/truncated JSON if necessary.
     """
-    start_idx = text.find("{")
-    if start_idx == -1:
+    if not text:
         return None
 
+    import re
+    import json
+
+    cleaned = str(text).strip()
+
+    # 1. Remove markdown code block wrappers if any
+    if "```" in cleaned:
+        match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", cleaned, re.DOTALL)
+        if match:
+            cleaned = match.group(1).strip()
+        else:
+            cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+            cleaned = re.sub(r"\s*```$", "", cleaned)
+            cleaned = cleaned.strip()
+
+    start_idx = cleaned.find("{")
+    if start_idx == -1:
+        return None
+    cleaned = cleaned[start_idx:]
+
+    def try_parse(candidate_str: str) -> Optional[str]:
+        try:
+            json.loads(candidate_str)
+            return candidate_str
+        except Exception:
+            pass
+        no_trailing = re.sub(r",\s*([\]}])", r"\1", candidate_str)
+        try:
+            json.loads(no_trailing)
+            return no_trailing
+        except Exception:
+            return None
+
+    # 2. Balanced brace counting with string literal awareness
+    in_string = False
+    escape = False
     depth = 0
-    for idx in range(start_idx, len(text)):
-        char = text[idx]
+    candidate = None
+
+    for idx, char in enumerate(cleaned):
+        if escape:
+            escape = False
+            continue
+        if char == "\\":
+            escape = True
+            continue
+        if char == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+
         if char == "{":
             depth += 1
         elif char == "}":
             depth -= 1
             if depth == 0:
-                candidate = text[start_idx: idx + 1]
-                import json
-                try:
-                    json.loads(candidate)
-                    return candidate
-                except json.JSONDecodeError:
-                    continue
+                candidate = cleaned[: idx + 1]
+                parsed = try_parse(candidate)
+                if parsed:
+                    return parsed
+
+    if candidate:
+        parsed = try_parse(candidate)
+        if parsed:
+            return parsed
+
+    # 3. Fallback to repair truncated JSON
+    repaired = _repair_truncated_json(cleaned)
+    if repaired:
+        parsed = try_parse(repaired)
+        if parsed:
+            return parsed
+
     return None
 
 async def stream_log(queue: asyncio.Queue, agent: str, status: str, detail: str = ""):

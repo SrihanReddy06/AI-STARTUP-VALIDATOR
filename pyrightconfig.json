@@ -1,0 +1,13 @@
+{
+  "venvPath": "backend",
+  "venv": "venv",
+  "pythonPath": "backend/venv/Scripts/python.exe",
+  "executionEnvironments": [
+    {
+      "root": "backend",
+      "extraPaths": [
+        "."
+      ]
+    }
+  ]
+}

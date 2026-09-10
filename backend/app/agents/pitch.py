@@ -55,13 +55,13 @@ async def run_pitch_agent(
         "8. Go-To-Market (Acquisition channels, marketing timelines, and concrete CAC/conversion metrics localized to the location)\n"
         "9. Financial Projections (3-Year revenue, expense, and profit growth projections matching the SOM calculations)\n"
         "10. The Ask & Next Steps (Funding target aligned with the budget tier, detailing how it will be spent: marketing, equipment/inventory, hiring, or operations)\n\n"
-        f"PITCH TAILORING DIRECTIVES:\n"
+        "PITCH TAILORING DIRECTIVES:\n"
         f"- Target Industry: {industry}\n"
         f"- Target Location/Region: {location}\n"
         f"- Funding Model/Budget: {budget}\n"
         f"- Slide 5 (Market Size) MUST reflect calculations local to {location}.\n"
-        f"- Slide 10 (The Ask) MUST be realistic to a '{budget}' funding model (e.g. if Bootstrapped under $10k, ask for small founder-friendly debt, custom project pre-sales, or minimal angel support; if VC Seed, ask for $500k-$1.5M for team scale-up).\n\n"
-        "For each slide, write a title, 3-4 data-rich, professional bullet points, and a detailed design note suggesting flowcharts, database diagrams, architectural layouts, or charts."
+        f"- Slide 10 (The Ask) MUST be realistic to a '{budget}' funding model (e.g. if Bootstrapped under $10k, ask for small founder-friendly debt, custom project pre-sales, or minimal angel support; if VC Seed, ask for $500k-$1.5M for team scale-up).\n"
+        "- CRITICAL CONCISENESS REQUIREMENT: For each slide, write a title, exactly 3 punchy, 1-line bullet points, and a concise 1-sentence design note to ensure clean, fast, complete output.\n"
     )
 
     # Prompt template
@@ -122,7 +122,7 @@ async def run_pitch_agent(
             # Escape JSON braces so ChatPromptTemplate does not interpret them as variables
             ("system", "You are a pitch coach. Respond ONLY with valid JSON (no markdown) that matches: "
              "{{\"slides\": [{{\"slide_number\": <number>, \"title\": <string>, \"bullet_points\": [<strings>], "
-             "\"design_note\": <string>}}]}}"),
+             "\"design_note\": <string>}}]}}\nKeep bullet points punchy and concise (max 3 bullets, 1 line each)."),
             ("user", "Brand: {brand_name}\\nTagline: {tagline}\\nIdea: {refined_idea}\\nFeatures: {mvp_features}\\n"
              "TAM: ${tam}\\nSAM: ${sam}\\nSOM: ${som}\\nCompetitors: {competitor_names}\\nMonetization: {monetization}\\n"
              "Pricing: {pricing}\\nYear 3 Revenue: ${y3_rev}\\nChannels: {channels}\\n\\n"
