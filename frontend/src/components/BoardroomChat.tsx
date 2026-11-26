@@ -9,13 +9,42 @@ interface BoardroomChatProps {
 }
 
 export const BoardroomChat: React.FC<BoardroomChatProps> = ({ report, providers }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const isDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('chatDemo') === 'true';
+  const defaultMessages: ChatMessage[] = isDemo ? [
+    {
+      role: 'strategist',
+      content: "Hello! We've generated your complete startup strategy for TalentForge. I am the Product Strategist, and I'm joined by our CFO and CMO. Ask us anything about features, marketing pipelines, or financial numbers!",
+      timestamp: '10:00 AM'
+    },
+    {
+      role: 'user',
+      content: "How can we cut our Year 1 CapEx costs to launch faster, and what is our primary acquisition channel?",
+      timestamp: '10:02 AM'
+    },
+    {
+      role: 'cfo',
+      content: "From a financial perspective, our biggest initial CapEx is the AI Matching Prototype ($2,000) and Marketing ($2,000). By starting with open-source embeddings and rule-based vetting, we can cut tech prototyping to $800, bringing total startup CapEx down to $7,500 and reducing our monthly burn to $625/mo.",
+      timestamp: '10:02 AM'
+    },
+    {
+      role: 'marketer',
+      content: "From the GTM side, LinkedIn targeted B2B thought leadership is our highest-converting, lowest-cost acquisition channel. We should target Tech Leads and Engineering Directors struggling with contractor hiring rather than broad paid ads.",
+      timestamp: '10:03 AM'
+    },
+    {
+      role: 'strategist',
+      content: "I agree with the CFO. We can defer complex automated compliance audits to Sprint 3 and launch Sprint 1 strictly with vetted profile onboarding and escrow payment guarantees.",
+      timestamp: '10:04 AM'
+    }
+  ] : [
     {
       role: 'strategist',
       content: "Hello! We've generated your complete startup strategy. I am the Product Strategist, and I'm joined by our CFO and CMO. Ask us anything about features, marketing pipelines, or financial numbers!",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
-  ]);
+  ];
+
+  const [messages, setMessages] = useState<ChatMessage[]>(defaultMessages);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [currentStatus, setCurrentStatus] = useState('');

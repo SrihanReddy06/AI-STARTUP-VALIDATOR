@@ -47,9 +47,15 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ report, providers }) => {
-  const [activeTab, setActiveTab] = useState<'canvas' | 'market' | 'finance' | 'marketing' | 'pitch' | 'chat' | 'roadmap'>('canvas');
-  const [activeSlide, setActiveSlide] = useState(0);
-  const [roadmapSubTab, setRoadmapSubTab] = useState<'journey' | 'playbook'>('journey');
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const initialTab = searchParams?.get('tab') as any;
+  const [activeTab, setActiveTab] = useState<'canvas' | 'market' | 'finance' | 'marketing' | 'pitch' | 'chat' | 'roadmap'>(
+    ['canvas', 'market', 'finance', 'marketing', 'pitch', 'chat', 'roadmap'].includes(initialTab) ? initialTab : 'canvas'
+  );
+  const initialSlide = searchParams?.get('slide') ? parseInt(searchParams.get('slide')!) : 0;
+  const [activeSlide, setActiveSlide] = useState(initialSlide);
+  const initialRoadmapSub = searchParams?.get('roadmapSub') === 'playbook' ? 'playbook' : 'journey';
+  const [roadmapSubTab, setRoadmapSubTab] = useState<'journey' | 'playbook'>(initialRoadmapSub);
   const [selectedRoadmapStep, setSelectedRoadmapStep] = useState(0);
 
   const { product, market, finance, gtm, pitch_deck, roadmap = [], weekly_playbook = [] } = report;

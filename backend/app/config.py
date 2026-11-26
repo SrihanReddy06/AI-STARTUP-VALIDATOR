@@ -7,6 +7,8 @@ ENV_PATH = os.path.join(BASE_DIR, ".env")
 class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
+    GEMINI_MODEL: str = "gemini-1.5-flash"
     PORT: int = 8000
     HOST: str = "0.0.0.0"
 

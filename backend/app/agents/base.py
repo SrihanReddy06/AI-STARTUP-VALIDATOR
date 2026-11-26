@@ -44,8 +44,8 @@ def get_llm(provider: str, model_name: Optional[str] = None, temperature: float 
         if not api_key or api_key == "your_groq_api_key_here":
             logger.warning("GROQ_API_KEY not found or is placeholder, using default settings or environment.")
         
-        # Valid active Groq production model
-        model = model_name or os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+        # Valid active Groq production model (131k context window)
+        model = model_name or os.getenv("GROQ_MODEL") or getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b") or "openai/gpt-oss-120b"
         return ChatGroq(
             model=model,
             temperature=temperature,
@@ -60,7 +60,7 @@ def get_llm(provider: str, model_name: Optional[str] = None, temperature: float 
             logger.warning("GEMINI_API_KEY not found or is placeholder, using default settings or environment.")
         
         # Valid Gemini production model
-        model = model_name or os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+        model = model_name or os.getenv("GEMINI_MODEL") or getattr(settings, "GEMINI_MODEL", "gemini-1.5-flash") or "gemini-1.5-flash"
         return ChatGoogleGenerativeAI(
             model=model,
             temperature=temperature,

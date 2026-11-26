@@ -69,6 +69,14 @@ function App() {
   useEffect(() => {
     pingBackend();
     loadHistory();
+    const params = new URLSearchParams(window.location.search);
+    const planParam = params.get('plan');
+    if (planParam) {
+      handleLoadHistory(parseInt(planParam));
+    }
+    if (params.get('history') === 'true') {
+      setIsHistoryOpen(true);
+    }
     const interval = setInterval(pingBackend, 15000);
     return () => {
       clearInterval(interval);
