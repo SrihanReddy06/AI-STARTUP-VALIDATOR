@@ -31,7 +31,7 @@ export interface HealthResponse {
 
 // Resolve API base URL dynamically, removing any trailing slash
 const rawBase = (import.meta.env.VITE_API_BASE as string | undefined)?.trim();
-export const API_BASE = rawBase !== undefined ? rawBase.replace(/\/+$/, '') : (import.meta.env.DEV ? 'http://localhost:8000' : '');
+export const API_BASE = rawBase ? rawBase.replace(/\/+$/, '') : (import.meta.env.DEV ? 'http://localhost:8000' : '');
 
 /**
  * Check backend health status

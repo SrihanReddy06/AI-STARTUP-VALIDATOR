@@ -387,7 +387,7 @@ AI Startup Validator is my attempt to democratize startup advisory — empowerin
 ---
 
 **Project**: AI Startup Validator (AgencyBuild)  
-**Live Demo**: [https://ai-startup-validator-chi.vercel.app](https://ai-startup-validator-chi.vercel.app)  
+**Live Demo**: [https://ai-startup-researcher.vercel.app](https://ai-startup-researcher.vercel.app)  
 **GitHub Repository**: [https://github.com/SrihanReddy06/AI-STARTUP-VALIDATOR](https://github.com/SrihanReddy06/AI-STARTUP-VALIDATOR)
 
 *Thank you for reading!*
