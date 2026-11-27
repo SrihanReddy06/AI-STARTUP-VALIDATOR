@@ -46,6 +46,20 @@ def get_llm(provider: str, model_name: Optional[str] = None, temperature: float 
         
         # Valid active Groq production model (131k context window)
         model = model_name or os.getenv("GROQ_MODEL") or getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b") or "openai/gpt-oss-120b"
+        
+        # Known deprecated or decommissioned Groq models
+        DEPRECATED_GROQ_MODELS = {
+            "llama-3.1-8b-instant",
+            "llama-3.1-70b-versatile",
+            "llama3-8b-8192",
+            "llama3-70b-8192",
+            "mixtral-8x7b-32768",
+            "gemma-7b-it",
+            "gemma2-9b-it",
+        }
+        if model in DEPRECATED_GROQ_MODELS:
+            logger.warning(f"Groq model '{model}' is deprecated/decommissioned. Auto-migrating to 'openai/gpt-oss-120b'.")
+            model = "openai/gpt-oss-120b"
         return ChatGroq(
             model=model,
             temperature=temperature,

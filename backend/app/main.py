@@ -62,7 +62,11 @@ def root():
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "message": "Server is running"}
+    return {
+        "status": "ok",
+        "message": "Server is running",
+        "groq_model": getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b")
+    }
 
 class GenerateRequest(BaseModel):
     idea: str
@@ -85,7 +89,11 @@ class BoardroomChatRequest(BaseModel):
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "message": "Server is running"}
+    return {
+        "status": "ok",
+        "message": "Server is running",
+        "groq_model": getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b")
+    }
 
 async def run_orchestrator_in_background(plan_id: int, idea: str, providers: Dict[str, str]):
     queue = asyncio.Queue()

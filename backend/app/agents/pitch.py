@@ -156,4 +156,8 @@ async def run_pitch_agent(
     
     await stream_log(queue, agent_name, "completed", "Investor pitch deck slides designed successfully!")
     
-    return result
+    if isinstance(result, PitchDeck):
+        return result
+    if isinstance(result, dict):
+        return PitchDeck.model_validate(result)
+    return PitchDeck.model_validate(result.model_dump())

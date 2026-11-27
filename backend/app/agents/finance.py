@@ -129,5 +129,9 @@ async def run_financial_officer(
     
     await stream_log(queue, agent_name, "completed", "Financial model and 3-year projections generated!")
     
-    return result
+    if isinstance(result, FinancialModel):
+        return result
+    if isinstance(result, dict):
+        return FinancialModel.model_validate(result)
+    return FinancialModel.model_validate(result.model_dump())
 

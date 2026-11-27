@@ -126,5 +126,9 @@ async def run_market_researcher(
 
     await stream_log(queue, agent_name, "completed", "Market research and competitor analysis completed!")
 
-    return result
+    if isinstance(result, MarketAnalysis):
+        return result
+    if isinstance(result, dict):
+        return MarketAnalysis.model_validate(result)
+    return MarketAnalysis.model_validate(result.model_dump())
 

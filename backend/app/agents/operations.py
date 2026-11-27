@@ -158,4 +158,8 @@ async def run_operations_agent(
         result = OperationsOutput.model_validate_json(json_body)
 
     await stream_log(queue, agent_name, "completed", "Startup operating roadmap and 12-week customer acquisition playbook ready!")
-    return result
+    if isinstance(result, OperationsOutput):
+        return result
+    if isinstance(result, dict):
+        return OperationsOutput.model_validate(result)
+    return OperationsOutput.model_validate(result.model_dump())

@@ -116,5 +116,9 @@ async def run_product_strategist(
     else:
         await stream_log(queue, agent_name, "completed", "Refined product plan successfully created!")
     
-    return result
+    if isinstance(result, ProductRefinement):
+        return result
+    if isinstance(result, dict):
+        return ProductRefinement.model_validate(result)
+    return ProductRefinement.model_validate(result.model_dump())
 

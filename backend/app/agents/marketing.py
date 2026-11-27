@@ -121,4 +121,8 @@ async def run_marketing_agent(
     
     await stream_log(queue, agent_name, "completed", "Go-To-Market strategy and branding guide ready!")
     
-    return result
+    if isinstance(result, GTMStrategy):
+        return result
+    if isinstance(result, dict):
+        return GTMStrategy.model_validate(result)
+    return GTMStrategy.model_validate(result.model_dump())
