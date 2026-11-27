@@ -65,7 +65,8 @@ def health_check():
     return {
         "status": "ok",
         "message": "Server is running",
-        "groq_model": getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b")
+        "groq_model": getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b"),
+        "has_groq_key": bool(settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY"))
     }
 
 class GenerateRequest(BaseModel):
@@ -92,7 +93,8 @@ def health_check():
     return {
         "status": "ok",
         "message": "Server is running",
-        "groq_model": getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b")
+        "groq_model": getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b"),
+        "has_groq_key": bool(settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY"))
     }
 
 async def run_orchestrator_in_background(plan_id: int, idea: str, providers: Dict[str, str]):
