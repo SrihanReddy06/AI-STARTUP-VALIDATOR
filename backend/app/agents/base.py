@@ -152,7 +152,7 @@ def extract_json_object(text: str) -> Optional[str]:
     import re
     import json
 
-    cleaned = str(text).strip()
+    cleaned = text.strip() if isinstance(text, str) else str(text).strip()
 
     # 1. Remove markdown code block wrappers if any
     if "```" in cleaned:

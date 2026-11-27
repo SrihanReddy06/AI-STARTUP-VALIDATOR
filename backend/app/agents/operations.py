@@ -149,8 +149,10 @@ async def run_operations_agent(
         raw_text = getattr(raw, "content", str(raw))
         if isinstance(raw_text, list):
             raw_text = "\n".join(str(item) for item in raw_text)
+        elif not isinstance(raw_text, str):
+            raw_text = str(raw_text)
 
-        json_body = extract_json_object(str(raw_text))
+        json_body = extract_json_object(raw_text)
         if json_body is None:
             logging.error(f"Operations fallback parse failed. Raw: {raw_text[:500]}")
             raise ValueError("Could not extract valid JSON for operations.")
